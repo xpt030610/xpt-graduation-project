@@ -13,13 +13,13 @@ export class UsersController {
 
   // 登录
   @Post('login')
-  async login(@Body() loginDto: { username: string; password: string }) {
-    return this.usersService.login(loginDto.username, loginDto.password);
+  async login(@Body() loginDto: { userId: string; password: string }) {
+    return this.usersService.login(loginDto.userId, loginDto.password);
   }
 
   // 查询用户
   @Get()
-  async findOne(@Body() findDto: { username: string }): Promise<User> {
-    return this.usersService.findOne(findDto.username);
+  async findOne(@Body() findDto: { userId: string }): Promise<User> {
+    return this.usersService.findOne(findDto.userId);
   }
 }

@@ -15,13 +15,16 @@ export class UsersService {
   // 注册
   async create(userData: Partial<User>): Promise<User> {
     // 验证输入
-    if (!userData.username || !userData.password) {
-      throw new UnauthorizedException('用户名和密码不能为空');
+    if (!userData.userId) {
+      throw new UnauthorizedException('学号不能为空');
     }
-    // 验证用户名是否重复
-    const existingUser = await this.findOne(userData.username);
+    if (!userData.userName || !userData.password) {
+      throw new UnauthorizedException('姓名和密码不能为空');
+    }
+    // 验证学号是否重复
+    const existingUser = await this.findOne(userData.userId);
     if (existingUser) {
-      throw new UnauthorizedException('用户已存在');
+      throw new UnauthorizedException('用户已注册');
     }
     // 密码加密
     if (userData.password) {
@@ -32,23 +35,23 @@ export class UsersService {
   }
 
   // 查询用户
-  async findOne(username: string): Promise<User> {
-    return this.userModel.findOne({ username }).exec(); // exec() 返回 Promise
+  async findOne(userId: string): Promise<User> {
+    return this.userModel.findOne({ userId }).exec(); // exec() 返回 Promise
   }
 
   // 新增带密码验证的登录方法
   async login(
-    username: string,
+    userId: string,
     password: string,
   ): Promise<{ access_token: string; statusCode: number; message: string }> {
     // 验证输入
-    if (!username || !password) {
-      throw new UnauthorizedException('用户名和密码不能为空');
+    if (!userId || !password) {
+      throw new UnauthorizedException('学号和密码不能为空');
     }
 
     // 查找用户（包含密码字段）
     const user = await this.userModel
-      .findOne({ username })
+      .findOne({ userId })
       .select('+password')
       .exec();
     if (!user) {
@@ -62,7 +65,7 @@ export class UsersService {
     }
 
     // 生成JWT
-    const payload = { sub: user.id, username: user.username };
+    const payload = { sub: user.id, userId: user.userId };
     return {
       statusCode: 200,
       message: '登录成功',
@@ -74,7 +77,7 @@ export class UsersService {
   }
 
   // 根据用户名查询用户（密码不返回）
-  async findByUsername(username: string): Promise<User | undefined> {
-    return this.userModel.findOne({ username }).select('-password').exec();
+  async findByuserName(userName: string): Promise<User | undefined> {
+    return this.userModel.findOne({ userName }).select('-password').exec();
   }
 }
