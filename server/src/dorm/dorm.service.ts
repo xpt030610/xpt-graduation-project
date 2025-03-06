@@ -37,6 +37,7 @@ export class DormService {
 
     // 创建要存储的用户信息结构
     const memberInfo = {
+      _id: user._id, // 携带原始用户ID
       userId: user.userId,
       userName: user.userName,
     };

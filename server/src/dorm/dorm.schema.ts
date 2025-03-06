@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-// import { Role } from '@enums/role.enum';
 import { Document } from 'mongoose';
+import mongoose from 'mongoose';
 
 export type RoomDocument = Room & Document;
 
@@ -23,6 +23,7 @@ export class Room {
     required: true,
     type: [
       {
+        _id: { type: mongoose.Schema.Types.ObjectId, required: true },
         userId: { type: String, required: true },
         userName: { type: String, required: true },
       },
