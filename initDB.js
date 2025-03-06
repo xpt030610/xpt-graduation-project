@@ -1,3 +1,12 @@
+/**
+ * TODO:
+ * 每个宿舍的床号需要单独存，可能住了学生可能没住
+ * 初始化学生，给每个学生一个学号，部分给床号，留一些给手动分配
+ * 初始化设备，给每个设备一个启用年限
+ * 初始化环境（湿度、温度、烟雾）
+ */
+
+
 // 1. 宿舍楼初始化
 const buildings = [
   { name: "西一", floors: 6 },
@@ -115,7 +124,7 @@ const students = [
   },
 ];
 
-db.Student.insertMany(students);
+db.Users.insertMany(students);
 
 // 6. 初始化测试工单
 const brokenDevice = db.Device.findOne();
