@@ -4,6 +4,9 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from '@users/users.module';
+import { RepairController } from './repair/repair.controller';
+import { DormController } from './dorm/dorm.controller';
+import { DormModule } from './dorm/dorm.module';
 
 @Module({
   imports: [
@@ -14,8 +17,9 @@ import { UsersModule } from '@users/users.module';
     // 连接到本地 MongoDB 数据库，数据库名称为 DormSystem
     MongooseModule.forRoot('mongodb://localhost:27017/DormSystem'),
     UsersModule,
+    DormModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, RepairController, DormController],
   providers: [AppService],
 })
 export class AppModule {}

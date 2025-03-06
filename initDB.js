@@ -12,14 +12,15 @@ const buildingIds = buildings.map((building) => {
 });
 
 // 2. 初始化宿舍房间
-function initRooms(buildingId, floors, roomsPerFloor) {
+function initRooms(buildingName,buildingId, floors, roomsPerFloor) {
   const rooms = [];
   for (let floor = 1; floor <= floors; floor++) {
     for (let roomNum = 1; roomNum <= roomsPerFloor; roomNum++) {
       rooms.push({
+        // 西一533
+        roomId: `${buildingName}${floor}${roomNum.toString().padStart(2, "0")}`,
         buildingId: buildingId,
-        floorNum: floor,
-        roomNum: `${floor}${roomNum.toString().padStart(2, "0")}`,
+        floor: floor,
         bedCount: 5,
         status: {
           type: "available",
@@ -34,8 +35,8 @@ function initRooms(buildingId, floors, roomsPerFloor) {
   db.Room.insertMany(rooms);
 }
 
-initRooms(buildingIds[0], 6, 40);
-initRooms(buildingIds[1], 5, 35);
+initRooms(buildings[0].name, buildingIds[0], 6, 40);
+initRooms(buildings[1].name, buildingIds[1], 5, 35);
 
 // 3. 初始化床位和设备
 const deviceTypes = [
@@ -78,14 +79,18 @@ db.Room.find().forEach((room) => {
 
 // 4. 创建索引
 const indexes = [
+  // 宿舍楼名称唯一索引
   { collection: db.Building, field: { name: 1 }, options: { unique: true } },
+  // 学生学号唯一索引
   {
     collection: db.Student,
     field: { studentId: 1 },
     options: { unique: true },
   },
+  // 设备工作状态索引（非唯一）
   { collection: db.Device, field: { "status.isWorking": 1 } },
-  { collection: db.Case, field: { "status.type": 1 } },
+  // 工单类型索引（非唯一）
+  { collection: db.Repair, field: { "status.type": 1 } },
 ];
 
 indexes.forEach((index) => {
@@ -114,7 +119,7 @@ db.Student.insertMany(students);
 
 // 6. 初始化测试工单
 const brokenDevice = db.Device.findOne();
-db.Case.insertOne({
+db.Repair.insertOne({
   deviceId: brokenDevice._id,
   reporterId: db.Student.findOne()._id,
   description: "电灯闪烁不亮",
