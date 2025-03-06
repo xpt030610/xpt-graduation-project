@@ -12,8 +12,17 @@ export class UsersService {
     private jwtService: JwtService,
   ) {}
 
-  // 创建用户
+  // 注册
   async create(userData: Partial<User>): Promise<User> {
+    // 验证输入
+    if (!userData.username || !userData.password) {
+      throw new UnauthorizedException('用户名和密码不能为空');
+    }
+    // 验证用户名是否重复
+    const existingUser = await this.findOne(userData.username);
+    if (existingUser) {
+      throw new UnauthorizedException('用户已存在');
+    }
     // 密码加密
     if (userData.password) {
       userData.password = await bcrypt.hash(userData.password, 10);
@@ -22,9 +31,9 @@ export class UsersService {
     return createdUser.save();
   }
 
-  // 查询所有用户
-  async findAll(): Promise<User[]> {
-    return this.userModel.find().exec(); // exec() 返回 Promise
+  // 查询用户
+  async findOne(username: string): Promise<User> {
+    return this.userModel.findOne({ username }).exec(); // exec() 返回 Promise
   }
 
   // 新增带密码验证的登录方法
