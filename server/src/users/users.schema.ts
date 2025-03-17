@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Role } from '@enums/role.enum';
-import { Document } from 'mongoose';
+import { Document, Schema } from 'mongoose';
 
 // 定义 MongoDB 文档类型
 export type UserDocument = User & Document;
@@ -11,6 +11,12 @@ export type UserDocument = User & Document;
  */
 @Schema({ collection: 'Users', timestamps: true })
 export class User {
+  // 所属房间ID(可选)
+  @Prop({ type: Schema.Types.ObjectId })
+  roomId: string;
+  // 床位ID(可选)
+  @Prop({ type: Schema.Types.ObjectId })
+  bedId: string;
   // 学号
   @Prop({ required: true, unique: true })
   userId: string;

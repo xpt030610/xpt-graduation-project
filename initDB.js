@@ -30,7 +30,7 @@
  *    - roomId: 所属房间ID（可选）
  *    - bedId: 床位ID（可选）
  *    - userId: 学号 (唯一)
- *    - name: 姓名
+ *    - userName: 姓名
  *    - password: 密码
  *    - role: 角色
  *
@@ -48,6 +48,8 @@
  *    - content: 公告内容
  *    - createdAt: 创建时间
  */
+
+const { temp } = require("three/tsl");
 
 /**
  * TODO:
@@ -77,13 +79,14 @@ function initRooms(buildingName,buildingId, floors, roomsPerFloor) {
   for (let floor = 1; floor <= floors; floor++) {
     for (let roomNum = 1; roomNum <= roomsPerFloor; roomNum++) {
       rooms.push({
-        // 西一533
-        roomId: `${buildingName}${floor}${roomNum.toString().padStart(2, "0")}`,
+        roomId: `${buildingName}${floor}${roomNum.toString().padStart(2, "0")}`, // 西一533
         buildingId: buildingId,
         floor: floor,
         bedCount: 5,
-        members: [], // 新增宿舍成员字段
-        beds: [], // 新增床位信息字段
+        temperature: 16,
+        humidity: 50,
+        smoke: 0,
+        updatedAt: new Date(),
       });
     }
   }
@@ -117,10 +120,8 @@ db.Room.find().forEach((room) => {
   const devices = deviceTypes.map((type) => ({
     roomId: room._id,
     type: type,
-    status: {
-      isWorking: true,
-      expiresDate: new Date("2025-12-31"), // 将过期日期移到status字段
-    },
+    status: true,
+    expiresDate: new Date("2025-12-31"),
   }));
   db.Device.insertMany(devices);
 });
@@ -128,17 +129,21 @@ db.Room.find().forEach((room) => {
 // 4. 创建索引
 const indexes = [
   // 宿舍楼名称唯一索引
-  { collection: db.Building, field: { name: 1 }, options: { unique: true } },
+  { collection: db.Building, field: { name: 1 }, options: { unique: true }},
   // 学生学号唯一索引
-  {
-    collection: db.Student,
-    field: { userId: 1 },
-    options: { unique: true },
-  },
+  { collection: db.Student, field: { userId: 1 }, options: { unique: true }},
+  // 房间号唯一索引
+  { collection: db.Room, field: { roomId: 1 }, options: { unique: true }},
+  // 床位复合唯一索引（同一房间内床号唯一）
+  { collection: db.Bed, field: { roomId: 1, bedNum: 1 }, options: { unique: true }},
+  // 设备复合索引（按房间和设备类型查询）
+  { collection: db.Device, field: { roomId: 1, type: 1 } },
   // 设备工作状态索引（非唯一）
-  { collection: db.Device, field: { "status.isWorking": 1 } },
+  { collection: db.Device, field: { status: 1 } },
   // 工单类型索引（非唯一）
-  { collection: db.Repair, field: { "status.type": 1 } },
+  { collection: db.Repair, field: { status: 1 } },
+  // 公告复合索引（按楼栋和时间查询）
+  { collection: db.Announcement, field: { buildingId: 1, createdAt: 1 } },
 ];
 
 indexes.forEach((index) => {
@@ -149,19 +154,17 @@ indexes.forEach((index) => {
 const sampleBed = db.Bed.findOne();
 const students = [
   {
-    name: "尹小龙",
+    userName: "尹小龙",
     userId: "3121005319",
     password: "1111111",
     bedId: sampleBed._id,
     role: "student",
-    checkInDate: new Date("2023-09-01"),
   },
   {
-    name: "肖鹏天",
+    userName: "肖鹏天",
     userId: "3121005314",
     password: "2222222",
     role: "student",
-    checkInDate: new Date(),
   },
 ];
 
@@ -171,11 +174,8 @@ db.Users.insertMany(students);
 const brokenDevice = db.Device.findOne();
 db.Repair.insertOne({
   deviceId: brokenDevice._id,
-  reporterId: db.Student.findOne()._id,
+  reporterId: db.Users.findOne()._id,
   description: "电灯闪烁不亮",
-  status: {
-    type: "pending",
-    updatedAt: new Date(),
-  },
+  status:  "pending",
   createdAt: new Date(),
 });
