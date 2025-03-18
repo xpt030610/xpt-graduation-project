@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Role } from '@enums/role.enum';
-import { Document, Schema } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
+
+// 提取 ObjectId 类型
+const ObjectId = MongooseSchema.Types.ObjectId;
 
 // 定义 MongoDB 文档类型
 export type UserDocument = User & Document;
@@ -12,10 +15,10 @@ export type UserDocument = User & Document;
 @Schema({ collection: 'Users', timestamps: true })
 export class User {
   // 所属房间ID(可选)
-  @Prop({ type: Schema.Types.ObjectId })
+  @Prop({ type: ObjectId })
   roomId: string;
   // 床位ID(可选)
-  @Prop({ type: Schema.Types.ObjectId })
+  @Prop({ type: ObjectId })
   bedId: string;
   // 学号
   @Prop({ required: true, unique: true })
