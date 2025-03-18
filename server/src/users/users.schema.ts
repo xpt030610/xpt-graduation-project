@@ -15,7 +15,7 @@ export type UserDocument = User & Document;
 @Schema({ collection: 'Users', timestamps: true })
 export class User {
   // 所属房间ID(可选)
-  @Prop({ type: ObjectId })
+  @Prop({ required: false })
   roomId: string;
   // 床位ID(可选)
   @Prop({ type: ObjectId })

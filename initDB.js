@@ -49,8 +49,6 @@
  *    - createdAt: 创建时间
  */
 
-const { temp } = require("three/tsl");
-
 /**
  * TODO:
  * 不耦合子级关系，防止父级过于臃肿、不好查询且信息重复，例如不需要在Room中存Beds信息，而是单独存
@@ -59,7 +57,6 @@ const { temp } = require("three/tsl");
  * 初始化设备，给每个设备一个启用年限
  * 初始化环境（湿度、温度、烟雾）
  */
-
 
 // 1. 宿舍楼初始化
 const buildings = [
@@ -110,7 +107,7 @@ db.Room.find().forEach((room) => {
   const beds = [];
   for (let i = 1; i <= room.bedCount; i++) {
     beds.push({
-      roomId: room._id,
+      roomId: room.roomId,
       bedNum: i,
       isOccupied: false,
     });

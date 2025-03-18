@@ -44,14 +44,11 @@ export class DormController {
         joinDto.roomId,
         joinDto.userId,
       );
-      new HttpException(
-        {
-          success: true,
-          message: '成功加入宿舍',
-          data: updatedRoom,
-        },
-        HttpStatus.OK,
-      );
+      return {
+        success: true,
+        message: '成功加入宿舍',
+        data: updatedRoom,
+      };
     } catch (error) {
       throw new HttpException(
         {

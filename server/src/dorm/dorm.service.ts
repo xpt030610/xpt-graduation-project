@@ -9,7 +9,7 @@ export class DormService {
   constructor(
     @InjectModel(Room.name) private readonly roomModel: Model<Room>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
-    @InjectModel(Bed.name) private readonly bedModel: Model<User>,
+    @InjectModel(Bed.name) private readonly bedModel: Model<Bed>,
   ) {}
 
   // 查询某宿舍楼的空余宿舍
@@ -45,46 +45,53 @@ export class DormService {
   }
 
   // 添加宿舍成员
-  async addMember(roomId: string, userId: string): Promise<Room> {
+  async addMember(roomId: string, userId: string): Promise<any> {
+    console.warn('addMember', roomId, userId);
     // 获取完整用户信息
-    const user = await this.userModel.findOne({ userId }).lean().exec();
+    const user = await this.userModel.findOne({ userId }).exec();
     if (!user) {
       throw new Error('用户不存在');
     }
+    console.warn('user', user);
     // 检查宿舍是否存在
     const room = await this.roomModel.findOne({ roomId }).exec();
     if (!room) {
       throw new Error('宿舍不存在');
     }
+    console.warn('room', room);
     // 检查用户是否已有床位
     const bed = await this.userModel.findOne({ userId }).exec();
     if (bed.bedId) {
-      throw new Error('用户已有床位');
+      throw new Error('用户已分配宿舍');
     }
-    // 检查床位是否已满
-    const bedCount = await this.bedModel.countDocuments({ roomId }).exec();
-    if (bedCount >= room.bedCount) {
-      throw new Error('床位已满');
-    }
-    // 创建要存储的用户信息结构
-    const memberInfo = {
-      _id: user._id, // 携带原始用户ID
-      userId: user.userId,
-      userName: user.userName,
-    };
-
-    return this.roomModel
-      .findOneAndUpdate(
-        { roomId },
-        { $addToSet: { members: memberInfo } },
-        { new: true },
-      )
-      .populate({
-        path: 'members',
-        select: 'userName',
-        options: { _id: 1 }, // 确保返回ObjectId
-      })
-      .lean()
+    console.warn('bed', bed);
+    // 查找宿舍的空余床位
+    const availableBed = await this.bedModel
+      .findOne({ roomId, isOccupied: false })
+      .sort({ bedNum: 1 }) // 按床号升序分配
       .exec();
+    if (!availableBed) {
+      throw new Error('该宿舍床位已满');
+    }
+    console.warn('availableBed', availableBed);
+
+    // 分配床位
+    availableBed.isOccupied = true;
+    await availableBed.save();
+
+    // 更新用户的房间ID和床位ID
+    await this.userModel.findByIdAndUpdate(
+      user._id,
+      { roomId, bedId: availableBed._id, updatedAt: new Date() },
+      { new: true },
+    );
+
+    return {
+      roomId: room.roomId,
+      buildingId: room.buildingId,
+      floor: room.floor,
+      bedCount: room.bedCount,
+      bedNum: availableBed.bedNum,
+    };
   }
 }
