@@ -54,8 +54,6 @@
  * 不耦合子级关系，防止父级过于臃肿、不好查询且信息重复，例如不需要在Room中存Beds信息，而是单独存
  * 每个宿舍的床号需要单独存，可能住了学生可能没住
  * 初始化学生，给每个学生一个学号，部分给床号，留一些给手动分配
- * 初始化设备，给每个设备一个启用年限
- * 初始化环境（湿度、温度、烟雾）
  */
 
 // 1. 宿舍楼初始化
@@ -122,7 +120,7 @@ db.Room.find().forEach((room) => {
     beds.push({
       roomId: room.roomId,
       bedNum: i,
-      isOccupied: Math.random() > 0.3, // 70%的概率有床位
+      isOccupied: false, 
     });
   }
   db.Bed.insertMany(beds);
@@ -141,7 +139,7 @@ const indexes = [
   // 宿舍楼名称唯一索引
   { collection: db.Building, field: { name: 1 }, options: { unique: true }},
   // 学生学号唯一索引
-  { collection: db.Student, field: { userId: 1 }, options: { unique: true }},
+  { collection: db.Users, field: { userId: 1 }, options: { unique: true }},
   // 房间号唯一索引
   { collection: db.Room, field: { roomId: 1 }, options: { unique: true }},
   // 床位复合唯一索引（同一房间内床号唯一）
@@ -160,25 +158,49 @@ indexes.forEach((index) => {
   index.collection.createIndex(index.field, index.options);
 });
 
-// 5. 初始化测试学生
-const sampleBed = db.Bed.findOne();
-const students = [
-  {
-    userName: "尹小龙",
-    userId: "3121005319",
-    password: "1111111",
-    bedId: sampleBed._id,
-    role: "student",
-  },
-  {
-    userName: "肖鹏天",
-    userId: "3121005314",
-    password: "2222222",
-    role: "student",
-  },
-];
+// 5. 初始化随机用户并分配床位
+function generateRandomName() {
+  const surnames = ["张", "王", "李", "赵", "刘", "陈", "杨", "黄", "吴", "周","肖","尹","潘","曾"];
+  const givenNames = ["伟", "芳", "娜", "敏", "静", "秀", "丽", "强", "磊", "军","小龙"];
+  const surname = surnames[Math.floor(Math.random() * surnames.length)];
+  const givenName = givenNames[Math.floor(Math.random() * givenNames.length)];
+  return surname + givenName;
+}
 
-db.Users.insertMany(students);
+function generateRandomPassword(length = 6) {
+  const chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    password += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return password;
+}
+
+// 生成 50 个随机用户
+const users = [];
+for (let i = 0; i < 50; i++) {
+  users.push({
+    userName: generateRandomName(),
+    userId: `312100${String(i).padStart(4, "0")}`, // 学号以 312100 开头，后接 4 位数字
+    password: generateRandomPassword(),
+    role: "student",
+  });
+}
+
+db.Users.insertMany(users);
+
+// 随机分配床位
+const beds = db.Bed.find({ isOccupied: false }).toArray(); // 获取所有未入住的床位
+users.forEach((user) => {
+  if (beds.length > 0) {
+    const randomBed = beds.splice(Math.floor(Math.random() * beds.length), 1)[0]; // 随机选择一个床位
+    db.Bed.updateOne({ _id: randomBed._id }, { $set: { isOccupied: true } }); // 标记床位为已入住
+    db.Users.updateOne(
+      { _id: user._id },
+      { $set: { bedId: randomBed._id, roomId: randomBed.roomId } } // 为用户分配床位和房间
+    );
+  }
+});
 
 // 6. 初始化测试工单
 const brokenDevice = db.Device.findOne();
