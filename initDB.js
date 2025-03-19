@@ -120,13 +120,13 @@ db.Room.find().forEach((room) => {
     beds.push({
       roomId: room.roomId,
       bedNum: i,
-      isOccupied: false, 
+      isOccupied: false,
     });
   }
   db.Bed.insertMany(beds);
 
   const devices = deviceTypes.map((type) => ({
-    roomId: room._id,
+    roomId: room.roomId,
     type: type,
     status: true,
     expiresDate: new Date("2025-12-31"),
