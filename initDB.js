@@ -71,18 +71,31 @@ const buildingIds = buildings.map((building) => {
 });
 
 // 2. 初始化宿舍房间
-function initRooms(buildingName,buildingId, floors, roomsPerFloor) {
+function initRooms(buildingName, floors, roomsPerFloor) {
   const rooms = [];
   for (let floor = 1; floor <= floors; floor++) {
     for (let roomNum = 1; roomNum <= roomsPerFloor; roomNum++) {
+      let temperature = Math.floor(Math.random() * 15) + 15; // 15-30°C之间的随机值
+      let humidity = Math.floor(Math.random() * 70); // 0-70%之间的随机值
+      let smoke = Math.floor(Math.random() * 50); // 0-50之间的随机值
+      // 如果是异常房间，生成异常数据
+      if (Math.random() < 0.05) {
+        temperature = Math.floor(Math.random() * 10) + 31; // 温度在31-40°C之间
+      }
+      if (Math.random() < 0.05) {
+        humidity = Math.floor(Math.random() * 28) + 71;   // 湿度在71-99%之间
+      }
+      if (Math.random() < 0.05) {
+        smoke = Math.floor(Math.random() * 49) + 51;      // 烟雾浓度在51-100之间
+      }
       rooms.push({
         roomId: `${buildingName}${floor}${roomNum.toString().padStart(2, "0")}`, // 西一533
-        buildingId: buildingId,
+        buildingId: buildingName,
         floor: floor,
         bedCount: 5,
-        temperature: 16,
-        humidity: 50,
-        smoke: 0,
+        temperature,
+        humidity,
+        smoke,
         updatedAt: new Date(),
       });
     }
@@ -90,8 +103,8 @@ function initRooms(buildingName,buildingId, floors, roomsPerFloor) {
   db.Room.insertMany(rooms);
 }
 
-initRooms(buildings[0].name, buildingIds[0], 6, 40);
-initRooms(buildings[1].name, buildingIds[1], 5, 35);
+initRooms(buildings[0].name, 6, 40);
+initRooms(buildings[1].name, 5, 35);
 
 // 3. 初始化床位和设备
 const deviceTypes = [
@@ -109,7 +122,7 @@ db.Room.find().forEach((room) => {
     beds.push({
       roomId: room.roomId,
       bedNum: i,
-      isOccupied: false,
+      isOccupied: Math.random() > 0.3, // 70%的概率有床位
     });
   }
   db.Bed.insertMany(beds);
