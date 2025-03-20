@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from '@users/users.module';
 import { RepairController } from './repair/repair.controller';
+import { RepairModule } from './repair/repair.module';
 import { DormController } from './dorm/dorm.controller';
 import { DormModule } from './dorm/dorm.module';
 
@@ -18,6 +19,7 @@ import { DormModule } from './dorm/dorm.module';
     MongooseModule.forRoot('mongodb://localhost:27017/DormSystem'),
     UsersModule,
     DormModule,
+    RepairModule,
   ],
   controllers: [AppController, RepairController, DormController],
   providers: [AppService],

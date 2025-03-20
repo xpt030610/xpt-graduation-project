@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
 import { RepairStatus, DeviceType } from '@enums/repair.enum';
+
+// 提取 ObjectId 类型
+const ObjectId = MongooseSchema.Types.ObjectId;
 
 export type DeviceDocument = Device & Document;
 export type RepairDocument = Repair & Document;
@@ -27,7 +30,7 @@ export class Device {
 @Schema({ collection: 'Repair', timestamps: true })
 export class Repair {
   // 设备ID
-  @Prop({ required: true })
+  @Prop({ type: ObjectId, required: true })
   deviceId: string;
 
   // 保修人ID

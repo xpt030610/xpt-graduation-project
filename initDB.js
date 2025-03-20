@@ -35,8 +35,8 @@
  *    - role: 角色
  *
  * 6. Repair（维修工单）:
- *    - deviceId: 设备ID
- *    - reporterId: 报修人ID
+ *    - deviceId: 设备ID(Device._id)
+ *    - reporterId: 报修人ID (User.userId,3121005314)
  *    - description: 问题描述
  *    - status: 工单状态(pending,progress,completed,cancelled)
  *    - createdAt: 创建时间
@@ -206,7 +206,7 @@ users.forEach((user) => {
 const brokenDevice = db.Device.findOne();
 db.Repair.insertOne({
   deviceId: brokenDevice._id,
-  reporterId: db.Users.findOne()._id,
+  reporterId: db.Users.findOne().userId,
   description: "电灯闪烁不亮",
   status:  "pending",
   createdAt: new Date(),
