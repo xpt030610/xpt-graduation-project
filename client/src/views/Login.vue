@@ -18,18 +18,24 @@
 
             <!-- 右侧登录表单 -->
             <div class="login-right">
-                <h1>登录</h1>
-                <p class="subtitle">请使用您的账户信息登录</p>
-                <form @submit.prevent="handleLogin">
+                <div class="login-header">
+                    <h1>欢迎登录</h1>
+                    <p class="subtitle">请使用您的账户信息登录</p>
+                </div>
+                <form @submit.prevent="handleLogin" class="login-form">
                     <div class="input-group">
                         <label for="username">用户名</label>
-                        <input id="username" v-model="username" type="text" required />
+                        <input id="username" v-model="username" type="text" placeholder="请输入用户名" required />
                     </div>
                     <div class="input-group">
                         <label for="password">密码</label>
-                        <input id="password" v-model="password" type="password" required />
+                        <input id="password" v-model="password" type="password" placeholder="请输入密码" required />
                     </div>
                     <button type="submit" class="login-button">登录</button>
+                    <div class="login-footer">
+                        <a href="#" class="forgot-password">忘记密码？</a>
+                        <a href="#" class="register">注册新账户</a>
+                    </div>
                 </form>
             </div>
         </div>
@@ -67,7 +73,7 @@ onMounted(() => {
         const ctx = canvas.getContext('2d');
 
         // 创建渐变颜色
-        const gradient = ctx.createLinearGradient(0, 0, 64, 64);
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
         gradient.addColorStop(0, colors[0]); // 起始颜色
         gradient.addColorStop(1, colors[1]); // 结束颜色
 
@@ -102,7 +108,7 @@ onMounted(() => {
     for (const colors of colorPalettes) {
         const texture = createRoundedRectTexture(128, 128, 32, colors);
         const material = new THREE.PointsMaterial({
-            size: 1.5,
+            size: Math.random() * 2 + 1,
             map: texture,
             transparent: true,
             opacity: 0.9,
@@ -112,7 +118,6 @@ onMounted(() => {
     }
 
     // 创建粒子系统
-    const particlesGeometry = new THREE.BufferGeometry();
     const particlesCount = 300;
 
     // 粒子位置数据
@@ -278,31 +283,46 @@ onMounted(() => {
 .login-right {
     flex: 1;
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     text-align: center;
+    border-radius: 16px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 标题 */
-.login-right h1 {
+/* 标题部分 */
+.login-header h1 {
     font-size: 28px;
     font-weight: bold;
     margin-bottom: 10px;
+    color: #ffffff;
 }
 
-/* 副标题 */
-.subtitle {
+.login-header .subtitle {
     font-size: 14px;
     color: #aaa;
     margin-bottom: 20px;
 }
 
-/* 输入框组 */
+/* 表单部分 */
+.login-form {
+    width: 100%;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
 .input-group {
-    margin-bottom: 20px;
-    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
 }
 
 .input-group label {
-    display: block;
     font-size: 14px;
     color: #ddd;
     margin-bottom: 5px;
@@ -322,7 +342,6 @@ onMounted(() => {
 
 .input-group input:focus {
     border-color: #007aff;
-    /* iOS 蓝色 */
     box-shadow: 0 0 8px rgba(0, 122, 255, 0.5);
 }
 
@@ -334,7 +353,6 @@ onMounted(() => {
     font-weight: bold;
     color: white;
     background: linear-gradient(90deg, #007aff, #0051ff);
-    /* iOS 风格渐变 */
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -344,12 +362,29 @@ onMounted(() => {
 .login-button:hover {
     background: linear-gradient(90deg, #0051ff, #007aff);
     transform: scale(1.02);
-    /* 鼠标悬停时放大 */
 }
 
 .login-button:active {
     background: linear-gradient(90deg, #003bb3, #0047d1);
     transform: scale(0.98);
-    /* 点击时缩小 */
+}
+
+/* 底部链接 */
+.login-footer {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.login-footer a {
+    font-size: 14px;
+    color: #007aff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.login-footer a:hover {
+    color: #0051ff;
 }
 </style>
