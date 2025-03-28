@@ -36,7 +36,6 @@ export class RepairService {
           type: device,
         })
         .exec();
-      console.warn('deviceInfo', deviceInfo, room._id, device);
       // repair集合增加一个保修单
       const repair = new this.repairModel({
         deviceId: deviceInfo._id,
