@@ -8,8 +8,8 @@
   ],
   "scripts": {
     "start": "concurrently \"npm:start-*\"",
-    "start-client": "cd client && npm run dev",
-    "start-server": "cd server && npm run start:dev",
+    "start-client": "cd client && pnpm run dev",
+    "start-server": "cd server && pnpm run start:dev",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces"
   },
@@ -22,3 +22,4 @@
     "three": "^0.174.0"
   }
 }
+

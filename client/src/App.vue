@@ -3,7 +3,7 @@
 
 <template>
   <div>
-    build new project
+    <router-view />
   </div>
 </template>
 
