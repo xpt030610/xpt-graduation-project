@@ -6,7 +6,7 @@ import { User } from './users.schema';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
   // 注册
-  @Post()
+  @Post('create')
   async create(@Body() userData: User): Promise<User> {
     return this.usersService.create(userData);
   }
@@ -18,7 +18,7 @@ export class UsersController {
   }
 
   // 查询用户
-  @Get()
+  @Get('findOne')
   async findOne(@Body() findDto: { userId: string }): Promise<User> {
     return this.usersService.findOne(findDto.userId);
   }

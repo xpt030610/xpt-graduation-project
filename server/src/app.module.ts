@@ -8,9 +8,14 @@ import { RepairController } from './repair/repair.controller';
 import { RepairModule } from './repair/repair.module';
 import { DormController } from './dorm/dorm.controller';
 import { DormModule } from './dorm/dorm.module';
-
+import { JwtModule } from '@nestjs/jwt';
+import { AuthGuard } from './auth/auth.guard';
 @Module({
   imports: [
+    JwtModule.register({
+      secret: process.env.JWT_SECRET, //  JWT 密钥
+      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }, // 设置 token 过期时间
+    }),
     ConfigModule.forRoot({
       isGlobal: true, // 全局可用
       envFilePath: '.env', // 指定.env文件路径
@@ -22,6 +27,7 @@ import { DormModule } from './dorm/dorm.module';
     RepairModule,
   ],
   controllers: [AppController, RepairController, DormController],
-  providers: [AppService],
+  providers: [AppService, AuthGuard],
+  exports: [AuthGuard],
 })
 export class AppModule {}

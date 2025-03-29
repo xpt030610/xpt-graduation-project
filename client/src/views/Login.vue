@@ -22,10 +22,14 @@
                     <h1>欢迎登录</h1>
                     <p class="subtitle">请使用您的账户信息登录</p>
                 </div>
-                <form @submit.prevent="handleLogin" class="login-form">
+                <form @submit.prevent="handleClick" class="login-form">
                     <div class="input-group">
-                        <label for="username">用户名</label>
-                        <input id="username" v-model="username" type="text" placeholder="请输入用户名" required />
+                        <label for="username">学号</label>
+                        <input id="username" v-model="userId" type="text" placeholder="请输入学号" required />
+                    </div>
+                    <div v-if="!isLogin" class="input-group">
+                        <label for="userName">姓名</label>
+                        <input id="userName" v-model="userName" type="userName" placeholder="请输入姓名" required />
                     </div>
                     <div class="input-group">
                         <label for="password">密码</label>
@@ -33,8 +37,8 @@
                     </div>
                     <button type="submit" class="login-button">登录</button>
                     <div class="login-footer">
-                        <a href="#" class="forgot-password">忘记密码？</a>
-                        <a href="#" class="register">注册新账户</a>
+                        <div v-if="isLogin" @click="() => { isLogin = false }">注册新账户</div>
+                        <div v-if="!isLogin" @click="() => { isLogin = true }">已有账户</div>
                     </div>
                 </form>
             </div>
@@ -45,15 +49,57 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import * as THREE from 'three';
+import axios from 'axios';
+import router from '../router';
 
-const username = ref('');
+const isLogin = ref(true);
+const userId = ref('');
+const userName = ref('');
 const password = ref('');
 
-const handleLogin = () => {
-    if (username.value === 'admin' && password.value === '123456') {
-        alert('登录成功');
+const handleClick = async () => {
+    if (isLogin.value) {
+        await handleLogin();
     } else {
-        alert('用户名或密码错误');
+        await handleRegister();
+    }
+
+};
+
+const handleRegister = async () => {
+    try {
+        const response = await axios.post('/users/create', {
+            userId: userId.value,
+            userName: userName.value,
+            password: password.value,
+            role: 'student'
+        });
+        console.log('注册成功:', response);
+        alert('注册成功，请登录');
+        isLogin.value = true;
+    } catch (error) {
+        console.error('注册失败:', error, error.response.data.message);
+        alert('注册失败：' + error.response.data.message);
+    }
+}
+
+const handleLogin = async () => {
+    try {
+        const response = await axios.post('/users/login', {
+            userId: userId.value,
+            password: password.value
+        });
+        console.log('登录成功:', response);
+        const token = response.data.access_token;
+        // 将 token 存储到 localStorage
+        localStorage.setItem('access_token', token);
+        // 设置 Axios 默认 Authorization 头
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // 跳转到首页
+        router.push('/');
+    } catch (error) {
+        console.error('登录失败:', error);
+        alert('登录失败:' + error.response.data.message);
     }
 };
 
@@ -377,14 +423,14 @@ onMounted(() => {
     width: 100%;
 }
 
-.login-footer a {
+.login-footer div {
     font-size: 14px;
     color: #007aff;
-    text-decoration: none;
+    cursor: pointer;
     transition: color 0.3s ease;
 }
 
-.login-footer a:hover {
+.login-footer div:hover {
     color: #0051ff;
 }
 </style>
