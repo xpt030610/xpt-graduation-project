@@ -81,10 +81,10 @@ function initRooms(buildingName, floors, roomsPerFloor) {
         temperature = Math.floor(Math.random() * 10) + 31; // 温度在31-40°C之间
       }
       if (Math.random() < 0.05) {
-        humidity = Math.floor(Math.random() * 28) + 71;   // 湿度在71-99%之间
+        humidity = Math.floor(Math.random() * 28) + 71; // 湿度在71-99%之间
       }
       if (Math.random() < 0.05) {
-        smoke = Math.floor(Math.random() * 49) + 51;      // 烟雾浓度在51-100之间
+        smoke = Math.floor(Math.random() * 49) + 51; // 烟雾浓度在51-100之间
       }
       rooms.push({
         roomId: `${buildingName}${floor}${roomNum.toString().padStart(2, "0")}`, // 西一533
@@ -137,13 +137,17 @@ db.Room.find().forEach((room) => {
 // 4. 创建索引
 const indexes = [
   // 宿舍楼名称唯一索引
-  { collection: db.Building, field: { name: 1 }, options: { unique: true }},
+  { collection: db.Building, field: { name: 1 }, options: { unique: true } },
   // 学生学号唯一索引
-  { collection: db.Users, field: { userId: 1 }, options: { unique: true }},
+  { collection: db.Users, field: { userId: 1 }, options: { unique: true } },
   // 房间号唯一索引
-  { collection: db.Room, field: { roomId: 1 }, options: { unique: true }},
+  { collection: db.Room, field: { roomId: 1 }, options: { unique: true } },
   // 床位复合唯一索引（同一房间内床号唯一）
-  { collection: db.Bed, field: { roomId: 1, bedNum: 1 }, options: { unique: true }},
+  {
+    collection: db.Bed,
+    field: { roomId: 1, bedNum: 1 },
+    options: { unique: true },
+  },
   // 设备复合索引（按房间和设备类型查询）
   { collection: db.Device, field: { roomId: 1, type: 1 } },
   // 设备工作状态索引（非唯一）
@@ -160,8 +164,35 @@ indexes.forEach((index) => {
 
 // 5. 初始化随机用户并分配床位
 function generateRandomName() {
-  const surnames = ["张", "王", "李", "赵", "刘", "陈", "杨", "黄", "吴", "周","肖","尹","潘","曾"];
-  const givenNames = ["伟", "芳", "娜", "敏", "静", "秀", "丽", "强", "磊", "军","小龙"];
+  const surnames = [
+    "张",
+    "王",
+    "李",
+    "赵",
+    "刘",
+    "陈",
+    "杨",
+    "黄",
+    "吴",
+    "周",
+    "肖",
+    "尹",
+    "潘",
+    "曾",
+  ];
+  const givenNames = [
+    "伟",
+    "芳",
+    "娜",
+    "敏",
+    "静",
+    "秀",
+    "丽",
+    "强",
+    "磊",
+    "军",
+    "小龙",
+  ];
   const surname = surnames[Math.floor(Math.random() * surnames.length)];
   const givenName = givenNames[Math.floor(Math.random() * givenNames.length)];
   return surname + givenName;
@@ -193,7 +224,10 @@ db.Users.insertMany(users);
 const beds = db.Bed.find({ isOccupied: false }).toArray(); // 获取所有未入住的床位
 users.forEach((user) => {
   if (beds.length > 0) {
-    const randomBed = beds.splice(Math.floor(Math.random() * beds.length), 1)[0]; // 随机选择一个床位
+    const randomBed = beds.splice(
+      Math.floor(Math.random() * beds.length),
+      1
+    )[0]; // 随机选择一个床位
     db.Bed.updateOne({ _id: randomBed._id }, { $set: { isOccupied: true } }); // 标记床位为已入住
     db.Users.updateOne(
       { _id: user._id },
@@ -208,6 +242,6 @@ db.Repair.insertOne({
   deviceId: brokenDevice._id,
   reporterId: db.Users.findOne().userId,
   description: "电灯闪烁不亮",
-  status:  "pending",
+  status: "pending",
   createdAt: new Date(),
 });

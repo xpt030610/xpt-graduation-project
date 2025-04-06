@@ -12,9 +12,10 @@
     "baseUrl": "./",
     "paths": {
       "@enums/*": ["src/enums/*"],
+      "@auth/*": ["src/auth/*"],
       "@users/*": ["src/users/*"],
       "@repair/*": ["src/repair/*"],
-      "@dorm/*": ["src/dorm/*"],
+      "@dorm/*": ["src/dorm/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

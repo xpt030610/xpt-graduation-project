@@ -1,7 +1,7 @@
 <template>
     <div>
         <h1>欢迎来到主页</h1>
-        <p>这是一个简单的 Vue 3 应用。</p>
+        <p>这是一个简单的应用。</p>
         <container />
     </div>
 </template>
