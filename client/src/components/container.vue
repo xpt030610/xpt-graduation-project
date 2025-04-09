@@ -34,7 +34,7 @@ onMounted(() => {
     // 加载 GLTF 模型
     const loader = new GLTFLoader();
     loader.load(
-        '/src/assets/school.glb', // 替换为你的模型路径
+        '/src/assets/school3.glb', // 替换为你的模型路径
         (gltf) => {
             const model = gltf.scene;
             model.scale.set(1, 1, 1); // 调整模型大小

@@ -5,6 +5,8 @@ import { User, UserSchema } from '@users/users.schema';
 import { Device, Repair, DeviceSchema, RepairSchema } from './repair.schema';
 import { RepairService } from './repair.service';
 import { RepairController } from './repair.controller';
+import { AuthModule } from '@auth/auth.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -13,6 +15,7 @@ import { RepairController } from './repair.controller';
       { name: User.name, schema: UserSchema },
       { name: Repair.name, schema: RepairSchema },
     ]),
+    AuthModule,
   ],
   controllers: [RepairController],
   providers: [RepairService],
