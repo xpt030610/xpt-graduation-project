@@ -51,6 +51,7 @@ import { ref, onMounted } from 'vue';
 import * as THREE from 'three';
 import axios from 'axios';
 import router from '../router';
+import { MessagePlugin } from 'tdesign-vue-next';
 
 const isLogin = ref(true);
 const userId = ref('');
@@ -75,11 +76,11 @@ const handleRegister = async () => {
             role: 'student'
         });
         console.log('注册成功:', response);
-        alert('注册成功，请登录');
+        MessagePlugin.success('注册成功，请登录');
         isLogin.value = true;
     } catch (error) {
         console.error('注册失败:', error, error.response.data.message);
-        alert('注册失败：' + error.response.data.message);
+        MessagePlugin.error('注册失败：' + (error.response?.data?.message || '未知错误'));
     }
 }
 
@@ -89,7 +90,14 @@ const handleLogin = async () => {
             userId: userId.value,
             password: password.value
         });
+        // 特殊情况：用户账户未注册
+        if (response.data.shouldRegister) {
+            isLogin.value = false;
+            MessagePlugin.info('用户不存在，请注册');
+            return;
+        }
         console.log('登录成功:', response);
+        MessagePlugin.success('登录成功');
         const token = response.data.access_token;
         // 将 token 存储到 localStorage
         localStorage.setItem('access_token', token);
@@ -99,7 +107,7 @@ const handleLogin = async () => {
         router.push('/');
     } catch (error) {
         console.error('登录失败:', error);
-        alert('登录失败:' + error.response.data.message);
+        MessagePlugin.error('登录失败：' + (error.response?.data?.message || '未知错误'));
     }
 };
 

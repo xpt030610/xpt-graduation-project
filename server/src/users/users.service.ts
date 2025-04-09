@@ -43,19 +43,29 @@ export class UsersService {
   async login(
     userId: string,
     password: string,
-  ): Promise<{ access_token: string; statusCode: number; message: string }> {
+  ): Promise<{
+    access_token?: string;
+    statusCode: number;
+    message: string;
+    shouldRegister?: boolean;
+  }> {
     // 验证输入
     if (!userId || !password) {
       throw new UnauthorizedException('学号和密码不能为空');
     }
 
     // 查找用户（包含密码字段）
+    // 不存在就告知前端，进入注册页
     const user = await this.userModel
       .findOne({ userId })
       .select('+password')
       .exec();
     if (!user) {
-      throw new UnauthorizedException('用户不存在');
+      return {
+        statusCode: 404,
+        message: '用户不存在，请注册',
+        shouldRegister: true,
+      };
     }
     // 验证密码
     const isValid = await bcrypt.compare(password, user.password);

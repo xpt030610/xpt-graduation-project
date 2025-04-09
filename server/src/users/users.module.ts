@@ -4,6 +4,7 @@ import { User, UserSchema } from './users.schema';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { JwtModule } from '@nestjs/jwt';
+
 @Module({
   imports: [
     // 注册 User 模型，使其可在服务层注入

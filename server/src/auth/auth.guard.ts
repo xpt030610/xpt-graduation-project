@@ -12,6 +12,13 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
+    const url = request.url; // 获取请求路径
+
+    // 如果是公共接口（如 /users/login），直接放行
+    if (url.startsWith('/users')) {
+      return true;
+    }
+
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {

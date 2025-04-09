@@ -7,11 +7,13 @@ const routes = [
     path: "/",
     name: "Home",
     component: Home,
+    meta: { requiresAuth: true }, // 需要登录
   },
   {
     path: "/login",
     name: "Login",
     component: Login,
+    meta: { requiresAuth: false }, // 不需要登录
   },
 ];
 

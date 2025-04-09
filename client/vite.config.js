@@ -1,8 +1,19 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import Components from "unplugin-vue-components/vite";
+import AutoImport from "unplugin-auto-import/vite";
+import { TDesignResolver } from "unplugin-vue-components/resolvers";
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    Components({
+      resolvers: [TDesignResolver()], // 配置 TDesign 按需引入
+    }),
+    AutoImport({
+      resolvers: [TDesignResolver()], // 自动引入 TDesign 相关 API
+    }),
+  ],
   server: {
     proxy: {
       "/users": {
@@ -13,3 +24,4 @@ export default defineConfig({
     },
   },
 });
+
