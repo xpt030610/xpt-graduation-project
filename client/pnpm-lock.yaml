@@ -11,6 +11,9 @@ importers:
       axios:
         specifier: ^1.8.4
         version: 1.8.4
+      gsap:
+        specifier: ^3.12.7
+        version: 3.12.7
       tdesign-vue-next:
         specifier: ^1.11.5
         version: 1.11.5(vue@3.5.13)
@@ -534,6 +537,9 @@ packages:
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
+
+  gsap@3.12.7:
+    resolution: {integrity: sha512-V4GsyVamhmKefvcAKaoy0h6si0xX7ogwBoBSs2CTJwt7luW0oZzC0LhdkyuKV8PJAXr7Yaj8pMjCKD4GJ+eEMg==}
 
   has-symbols@1.1.0:
     resolution: {integrity: sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==}
@@ -1183,6 +1189,8 @@ snapshots:
       is-glob: 4.0.3
 
   gopd@1.2.0: {}
+
+  gsap@3.12.7: {}
 
   has-symbols@1.1.0: {}
 
