@@ -1,5 +1,11 @@
 <template>
     <div ref="threeContainer" class="three-container"></div>
+    <div v-if="hoveredInfo.visible" class="info-box" @mouseenter="isHoveringInfoBox = true"
+        @mouseleave="isHoveringInfoBox = false">
+        <h3>{{ hoveredInfo.name }}</h3>
+        <button @click="handleAction('edit')">编辑</button>
+        <button @click="handleAction('delete')">删除</button>
+    </div>
 </template>
 
 <script setup>
@@ -17,6 +23,17 @@ const mouse = new THREE.Vector2(); // 保存鼠标位置
 let controls; // 定义 OrbitControls 的引用
 let hoveredObject = null; // 当前悬停的对象
 let selectedObject = null; // 当前选中的对象
+
+// 信息框状态
+const hoveredInfo = ref({
+    visible: false,
+    x: 0,
+    y: 0,
+    name: '',
+});
+
+// 标记鼠标是否悬停在 info-box 上
+const isHoveringInfoBox = ref(false);
 
 // 让相机对准目标模型
 const focusOnModel = (modelName) => {
@@ -59,6 +76,7 @@ const focusOnModel = (modelName) => {
 
 onMounted(() => {
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x101010); // 设置为更纯粹的深色
     camera.value = new THREE.PerspectiveCamera(
         75,
         window.innerWidth / window.innerHeight,
@@ -70,18 +88,23 @@ onMounted(() => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     threeContainer.value.appendChild(renderer.domElement);
 
-    // 添加环境光和方向光
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    // 添加光源
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // 环境光，降低强度
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // 方向光
     directionalLight.position.set(5, 10, 7.5);
+    directionalLight.castShadow = true; // 启用阴影
+    directionalLight.shadow.mapSize.width = 1024; // 阴影分辨率
+    directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 50;
     scene.add(directionalLight);
 
     // 加载 GLTF 模型
     const loader = new GLTFLoader();
     loader.load(
-        '/src/assets/school3.glb', // 替换为你的模型路径
+        '/src/assets/school4.glb', // 替换为你的模型路径
         (gltf) => {
             const model = gltf.scene;
             model.scale.set(1, 1, 1); // 调整模型大小
@@ -139,6 +162,10 @@ onMounted(() => {
 
     // 鼠标移动事件
     window.addEventListener('mousemove', (event) => {
+        if (isHoveringInfoBox.value) {
+            // 如果鼠标悬停在 info-box 上，不隐藏信息框
+            return;
+        }
         // 将鼠标位置归一化到 -1 到 1 的范围
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -161,27 +188,36 @@ onMounted(() => {
                 if (hovered !== selectedObject) {
                     hoveredObject = hovered;
 
-                    // 基于原始材质创建高亮材质，保留原始属性
                     hoveredObject.material = new THREE.MeshPhysicalMaterial({
-                        color: 0x87ceeb, // 浅蓝色
-                        emissive: 0x1e90ff, // 发光效果
-                        metalness: 0.5, // 金属度
+                        color: 0xd3d3d3,
+                        metalness: 0.1, // 金属度
                         roughness: 0.2, // 粗糙度
-                        clearcoat: 0.3, // 清漆效果
+                        transmission: 0.4, // 透射率（玻璃效果）
+                        ior: 1.5, // 折射率
+                        clearcoat: 0.2, // 清漆效果
                         clearcoatRoughness: 0.1, // 清漆粗糙度
-                        transparent: hovered.userData.originalMaterial.transparent,
-                        opacity: hovered.userData.originalMaterial.opacity,
-                        depthTest: hovered.userData.originalMaterial.depthTest,
+                        transparent: true, // 启用透明
+                        opacity: 1, // 透明度
                         side: hovered.userData.originalMaterial.side,
                     });
+                    // 更新信息框内容和位置
+                    hoveredInfo.value = {
+                        visible: true,
+                        x: event.clientX - 20,
+                        y: event.clientY - 20,
+                        name: hovered.userData.name || '未知宿舍',
+                    };
                 }
             }
+
         } else {
             // 如果没有悬停对象，恢复之前悬停对象的材质
             if (hoveredObject && hoveredObject !== selectedObject) {
                 hoveredObject.material = hoveredObject.userData.originalMaterial;
                 hoveredObject = null;
             }
+            // 隐藏信息框
+            hoveredInfo.value.visible = false;
         }
     });
 
@@ -196,15 +232,15 @@ onMounted(() => {
             // 设置选中对象的材质
             selectedObject = hoveredObject;
             selectedObject.material = new THREE.MeshPhysicalMaterial({
-                color: 0x32cd32, // 浅绿色
-                emissive: 0x228b22, // 发光效果
-                metalness: 0.8, // 金属度
-                roughness: 0.1, // 粗糙度
-                clearcoat: 0.5, // 清漆效果
-                clearcoatRoughness: 0.05, // 清漆粗糙度
-                transparent: selectedObject.userData.originalMaterial.transparent,
-                opacity: selectedObject.userData.originalMaterial.opacity,
-                depthTest: selectedObject.userData.originalMaterial.depthTest,
+                color: 0xd3d3d3,
+                metalness: 0.3, // 金属度
+                roughness: 0.2, // 粗糙度
+                transmission: 0.1, // 透射率（玻璃效果）
+                ior: 1.5, // 折射率
+                clearcoat: 0.2, // 清漆效果
+                clearcoatRoughness: 0.1, // 清漆粗糙度
+                transparent: true, // 启用透明
+                opacity: 1, // 透明度
                 side: selectedObject.userData.originalMaterial.side,
             });
 
@@ -222,5 +258,36 @@ onMounted(() => {
     width: 100%;
     height: 100vh;
     overflow: hidden;
+}
+
+.info-box {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    font-size: 14px;
+    z-index: 1000;
+}
+
+.info-box h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+}
+
+.info-box button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+    font-size: 12px;
+}
+
+.info-box button:hover {
+    background: #0056b3;
 }
 </style>

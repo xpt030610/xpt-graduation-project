@@ -52,7 +52,7 @@ import * as THREE from 'three';
 import axios from 'axios';
 import router from '../router';
 import { MessagePlugin } from 'tdesign-vue-next';
-
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 const isLogin = ref(true);
 const userId = ref('');
 const userName = ref('');
@@ -118,6 +118,44 @@ onMounted(() => {
     const renderer = new THREE.WebGLRenderer({ alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('threejs-background').appendChild(renderer.domElement);
+
+    // // 设置相机为俯视视角
+    // camera.position.set(-1, 1, 1); // 设置相机在模型上方
+    // camera.lookAt(0, 0, 0); // 让相机朝向模型中心
+
+    // // 添加光源
+    // const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // 环境光
+    // scene.add(ambientLight);
+
+    // const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // 方向光
+    // directionalLight.position.set(10, 20, 10);
+    // scene.add(directionalLight);
+
+    // // 加载 GLTF 模型
+    // const loader = new GLTFLoader();
+    // loader.load(
+    //     '/src/assets/school4.glb', // 替换为你的模型路径
+    //     (gltf) => {
+    //         const model = gltf.scene;
+    //         model.scale.set(1, 1, 1); // 调整模型大小
+    //         model.position.set(0, 0, 0); // 设置模型位置
+    //         scene.add(model);
+    //     },
+    //     (xhr) => {
+    //         console.log(`模型加载进度: ${(xhr.loaded / xhr.total) * 100}%`);
+    //     },
+    //     (error) => {
+    //         console.error('模型加载失败:', error);
+    //     }
+    // );
+
+    // // 动画循环
+    // const animate = () => {
+    //     requestAnimationFrame(animate);
+    //     renderer.render(scene, camera);
+    // };
+
+    // animate();
 
     // 创建圆角矩形纹理（支持多种颜色）
     const createRoundedRectTexture = (width, height, radius, colors) => {

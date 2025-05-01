@@ -13,18 +13,18 @@
  *    - temperature: 温度
  *    - humidity: 湿度
  *    - smoke: 烟雾浓度
- *    - updatedAt: 参数更新时间
+ *    - updatedTime: 参数更新时间
  *
  * 3. Bed（床位）:
  *    - roomId: 所属房间ID
- *    - bedNum: 床号
+ *    - bedId: 床号
  *    - isOccupied: 是否有人住
  *
  * 4. Device（设备）:
  *    - roomId: 所属房间ID
  *    - type: 设备类型 (light/aircondition/socket/door/window/pipe)
  *    - status: 是否正常工作
- *    - expiresDate: 过期日期
+ *    - expiresTime: 过期日期
  *
  * 5. Users（用户/学生）:
  *    - roomId: 所属房间ID（可选）
@@ -37,16 +37,20 @@
  * 6. Repair（维修工单）:
  *    - deviceId: 设备ID(Device._id)
  *    - reporterId: 报修人ID (User.userId,3121005314)
- *    - description: 问题描述
+ *    - content: 问题描述
  *    - status: 工单状态(pending,progress,completed,cancelled)
- *    - createdAt: 创建时间
+ *    - createdTime: 创建时间
  *
- * 7. Announcement（公告）:
+ * 7. Notice（公告）:
  *    - buildingId: 所属宿舍楼ID（二选一）
  *    - roomId: 所属房间ID（二选一）
+ *    - releaseId: 发布人ID (User.userId,3121005314)
+ *    - type: 公告类型 (building/room)
+ *    - status: 公告状态 (published/draft)
+ *    - readList：已读用户列表 (userId)
  *    - title: 公告标题
  *    - content: 公告内容
- *    - createdAt: 创建时间
+ *    - createdTime: 创建时间
  */
 
 /**
@@ -94,7 +98,7 @@ function initRooms(buildingName, floors, roomsPerFloor) {
         temperature,
         humidity,
         smoke,
-        updatedAt: new Date(),
+        updatedTime: new Date(),
       });
     }
   }
@@ -119,7 +123,7 @@ db.Room.find().forEach((room) => {
   for (let i = 1; i <= room.bedCount; i++) {
     beds.push({
       roomId: room.roomId,
-      bedNum: i,
+      bedId: i,
       isOccupied: false,
     });
   }
@@ -129,7 +133,7 @@ db.Room.find().forEach((room) => {
     roomId: room.roomId,
     type: type,
     status: true,
-    expiresDate: new Date("2025-12-31"),
+    expiresTime: new Date("2025-12-31"),
   }));
   db.Device.insertMany(devices);
 });
@@ -145,7 +149,7 @@ const indexes = [
   // 床位复合唯一索引（同一房间内床号唯一）
   {
     collection: db.Bed,
-    field: { roomId: 1, bedNum: 1 },
+    field: { roomId: 1, bedId: 1 },
     options: { unique: true },
   },
   // 设备复合索引（按房间和设备类型查询）
@@ -155,7 +159,7 @@ const indexes = [
   // 工单类型索引（非唯一）
   { collection: db.Repair, field: { status: 1 } },
   // 公告复合索引（按楼栋和时间查询）
-  { collection: db.Announcement, field: { buildingId: 1, createdAt: 1 } },
+  { collection: db.Notice, field: { buildingId: 1, createdTime: 1 } },
 ];
 
 indexes.forEach((index) => {
@@ -241,7 +245,7 @@ const brokenDevice = db.Device.findOne();
 db.Repair.insertOne({
   deviceId: brokenDevice._id,
   reporterId: db.Users.findOne().userId,
-  description: "电灯闪烁不亮",
+  content: "电灯闪烁不亮",
   status: "pending",
-  createdAt: new Date(),
+  createdTime: new Date(),
 });

@@ -1,18 +1,19 @@
 <template>
-    <div>
-        <h1>欢迎来到主页</h1>
-        <p>这是一个简单的应用。</p>
+    <div class="home">
+        <!-- 导航栏 -->
+        <Navbar title="三维宿舍管理智能化管理平台" />
+        <!-- 容器组件 -->
         <container />
     </div>
 </template>
 
 <script setup>
+import Navbar from '../components/navbar.vue';
 import container from '../components/container.vue';
 </script>
 
 <style scoped>
-h1 {
-    text-align: center;
-    margin-top: 50px;
+.home {
+    background: linear-gradient(135deg, #1e1e2f, #121212);
 }
 </style>
