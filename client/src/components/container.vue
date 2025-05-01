@@ -1,7 +1,7 @@
 <template>
     <div ref="threeContainer" class="three-container"></div>
-    <div v-if="hoveredInfo.visible" class="info-box" @mouseenter="isHoveringInfoBox = true"
-        @mouseleave="isHoveringInfoBox = false">
+    <div v-if="hoveredInfo.visible" class="info-box" :style="{ top: hoveredInfo.y + 'px', left: hoveredInfo.x + 'px' }"
+        @mouseenter="isHoveringInfoBox = true" @mouseleave="isHoveringInfoBox = false">
         <h3>{{ hoveredInfo.name }}</h3>
         <button @click="handleAction('edit')">编辑</button>
         <button @click="handleAction('delete')">删除</button>
@@ -14,6 +14,7 @@ import { onMounted, ref } from 'vue';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import gsap from 'gsap';
+import throttle from 'lodash/throttle';
 
 const threeContainer = ref(null);
 const buildingRefs = ref({}); // 保存模型的引用
@@ -31,9 +32,25 @@ const hoveredInfo = ref({
     y: 0,
     name: '',
 });
+const isHoveringInfoBox = ref(false); // 标记鼠标是否悬停在 info-box 上
 
-// 标记鼠标是否悬停在 info-box 上
-const isHoveringInfoBox = ref(false);
+// 缓存悬停材质
+const hoverMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xd3d3d3,
+    metalness: 0.1,
+    roughness: 0.2,
+    transmission: 0.4,
+    ior: 1.5,
+    clearcoat: 0.2,
+    clearcoatRoughness: 0.1,
+    transparent: true,
+    opacity: 1,
+});
+
+// 操作按钮点击事件
+const handleAction = (action) => {
+    console.log(`执行操作: ${action}`);
+};
 
 // 让相机对准目标模型
 const focusOnModel = (modelName) => {
@@ -76,15 +93,9 @@ const focusOnModel = (modelName) => {
 
 onMounted(() => {
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x101010); // 设置为更纯粹的深色
-    camera.value = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-    );
+    scene.background = new THREE.Color(0x101010);
+    camera.value = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-
     renderer.setSize(window.innerWidth, window.innerHeight);
     threeContainer.value.appendChild(renderer.domElement);
 
@@ -94,34 +105,24 @@ onMounted(() => {
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // 方向光
     directionalLight.position.set(5, 10, 7.5);
-    directionalLight.castShadow = true; // 启用阴影
-    directionalLight.shadow.mapSize.width = 1024; // 阴影分辨率
-    directionalLight.shadow.mapSize.height = 1024;
-    directionalLight.shadow.camera.near = 0.5;
-    directionalLight.shadow.camera.far = 50;
     scene.add(directionalLight);
 
-    // 加载 GLTF 模型
+    // 加载模型
     const loader = new GLTFLoader();
-    loader.load(
-        '/src/assets/school4.glb', // 替换为你的模型路径
-        (gltf) => {
-            const model = gltf.scene;
-            model.scale.set(1, 1, 1); // 调整模型大小
-            model.position.set(0, 0, 0); // 设置模型位置
-            scene.add(model);
-
-            // 遍历模型，保存以 "building" 开头的对象
-            model.traverse((child) => {
-                if (child.isMesh && child.name.startsWith('building')) {
-                    buildingRefs.value[child.name] = child; // 保存引用
-                    child.userData.originalMaterial = child.material; // 保存原始材质
-                }
-
-            });
-            focusOnModel('building')
-            console.log('以 "building" 开头的模型:', buildingRefs.value);
-        },
+    loader.load('/src/assets/school4.glb', (gltf) => {
+        const model = gltf.scene;
+        model.scale.set(1, 1, 1); // 调整模型大小
+        model.position.set(0, 0, 0); // 设置模型位置
+        model.traverse((child) => {
+            if (child.isMesh && child.name.startsWith('building')) {
+                buildingRefs.value[child.name] = child;
+                child.userData.originalMaterial = child.material;
+                child.userData.name = `宿舍 ${child.name}`;
+            }
+        });
+        scene.add(model);
+        focusOnModel('building')
+    },
         (xhr) => {
             console.log(`模型加载进度: ${(xhr.loaded / xhr.total) * 100}%`);
         },
@@ -129,11 +130,6 @@ onMounted(() => {
             console.error('模型加载失败:', error);
         }
     );
-
-    // 设置相机初始位置
-    camera.value.position.set(10, 10, 10);
-    camera.value.lookAt(0, 0, 0);
-
     // 添加 OrbitControls
     controls = new OrbitControls(camera.value, renderer.domElement);
     controls.enableDamping = true; // 启用阻尼效果（惯性）
@@ -142,15 +138,12 @@ onMounted(() => {
     controls.minDistance = 1; // 设置最小缩放距离
     controls.maxDistance = 50; // 设置最大缩放距离
     controls.maxPolarAngle = Math.PI / 2; // 限制垂直旋转角度（防止翻转）
-
-    const animate = function () {
+    // 动画循环
+    const animate = () => {
         requestAnimationFrame(animate);
-
-        // 渲染场景
         controls.update();
         renderer.render(scene, camera.value);
     };
-
     animate();
 
     // 窗口大小调整事件
@@ -160,66 +153,49 @@ onMounted(() => {
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // 鼠标移动事件
-    window.addEventListener('mousemove', (event) => {
-        if (isHoveringInfoBox.value) {
-            // 如果鼠标悬停在 info-box 上，不隐藏信息框
-            return;
-        }
-        // 将鼠标位置归一化到 -1 到 1 的范围
+    // 优化后的鼠标移动事件
+    const onMouseMove = throttle((event) => {
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-        // 使用 Raycaster 检测悬停的对象
         raycaster.setFromCamera(mouse, camera.value);
-        const intersects = raycaster.intersectObjects(Object.values(buildingRefs.value));
-
+        const intersects = raycaster.intersectObjects(Object.values(buildingRefs.value)); // 只检测建筑物对象
         if (intersects.length > 0) {
             const hovered = intersects[0].object;
 
-            // 如果悬停的对象发生变化
             if (hoveredObject !== hovered) {
-                // 恢复之前悬停对象的材质
                 if (hoveredObject && hoveredObject !== selectedObject) {
                     hoveredObject.material = hoveredObject.userData.originalMaterial;
                 }
 
-                // 如果悬停对象不是选中的对象，则更改材质
                 if (hovered !== selectedObject) {
                     hoveredObject = hovered;
+                    hoveredObject.material = hoverMaterial;
 
-                    hoveredObject.material = new THREE.MeshPhysicalMaterial({
-                        color: 0xd3d3d3,
-                        metalness: 0.1, // 金属度
-                        roughness: 0.2, // 粗糙度
-                        transmission: 0.4, // 透射率（玻璃效果）
-                        ior: 1.5, // 折射率
-                        clearcoat: 0.2, // 清漆效果
-                        clearcoatRoughness: 0.1, // 清漆粗糙度
-                        transparent: true, // 启用透明
-                        opacity: 1, // 透明度
-                        side: hovered.userData.originalMaterial.side,
-                    });
-                    // 更新信息框内容和位置
                     hoveredInfo.value = {
                         visible: true,
-                        x: event.clientX - 20,
-                        y: event.clientY - 20,
+                        x: event.clientX - 10,
+                        y: event.clientY - 10,
                         name: hovered.userData.name || '未知宿舍',
                     };
                 }
             }
-
-        } else {
-            // 如果没有悬停对象，恢复之前悬停对象的材质
+        }
+        else {
+            // 如果没有悬停对象，重置 hoveredObject
             if (hoveredObject && hoveredObject !== selectedObject) {
                 hoveredObject.material = hoveredObject.userData.originalMaterial;
                 hoveredObject = null;
             }
             // 隐藏信息框
-            hoveredInfo.value.visible = false;
+            if (hoveredInfo.value.visible && !isHoveringInfoBox.value) {
+                hoveredInfo.value.visible = false;
+            }
+
         }
-    });
+    }, 200); // 每 200ms 触发一次
+
+    window.addEventListener('mousemove', onMouseMove);
 
     // 鼠标点击事件
     window.addEventListener('click', () => {
@@ -249,8 +225,6 @@ onMounted(() => {
         }
     });
 });
-
-
 </script>
 
 <style scoped>

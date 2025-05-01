@@ -14,6 +14,9 @@ importers:
       gsap:
         specifier: ^3.12.7
         version: 3.12.7
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       tdesign-vue-next:
         specifier: ^1.11.5
         version: 1.11.5(vue@3.5.13)
@@ -578,6 +581,9 @@ packages:
 
   lodash-es@4.17.21:
     resolution: {integrity: sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==}
+
+  lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
 
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
@@ -1223,6 +1229,8 @@ snapshots:
       quansync: 0.2.10
 
   lodash-es@4.17.21: {}
+
+  lodash@4.17.21: {}
 
   magic-string@0.30.17:
     dependencies:
