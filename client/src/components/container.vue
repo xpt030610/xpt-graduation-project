@@ -10,7 +10,7 @@
 
 <script setup>
 import * as THREE from 'three';
-import { onMounted, ref } from 'vue';
+import { h, onMounted, ref } from 'vue';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import gsap from 'gsap';
@@ -45,6 +45,19 @@ const hoverMaterial = new THREE.MeshPhysicalMaterial({
     clearcoatRoughness: 0.1,
     transparent: true,
     opacity: 1,
+});
+
+// 缓存选中材质
+const selectedMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xd3d3d3,
+    metalness: 0.3, // 金属度
+    roughness: 0.2, // 粗糙度
+    transmission: 0.1, // 透射率（玻璃效果）
+    ior: 1.5, // 折射率
+    clearcoat: 0.2, // 清漆效果
+    clearcoatRoughness: 0.1, // 清漆粗糙度
+    transparent: true, // 启用透明
+    opacity: 1, // 透明度
 });
 
 // 操作按钮点击事件
@@ -206,22 +219,8 @@ const autoSplitBuildings = (model, segments = 5) => {
 
     // 2. 处理每个建筑对象
     buildingsToProcess.forEach(obj => {
-        // const layersGroup = splitBuildingIntoLayers(obj, segments);
-        // buildingRefs.value[layersGroup.name] = layersGroup;
-        // if (obj.parent) {
-        //     obj.parent.add(layersGroup);
-        //     obj.parent.remove(obj);
-
-        //     obj.geometry.dispose();
-        //     if (Array.isArray(obj.material)) {
-        //         obj.material.forEach(m => m.dispose());
-        //     }
-        // } else {
-        //     console.warn(`建筑 ${obj.name} 没有父级，直接添加到场景`);
-        //     scene.add(layersGroup);
-        // }
+        obj.userData.originalMaterial = obj.material; // 保存原始材质
         buildingRefs.value[obj.name] = obj;
-
     });
     console.log('model', model);
 
@@ -291,17 +290,13 @@ onMounted(() => {
     const onMouseMove = throttle((event) => {
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
         raycaster.setFromCamera(mouse, camera.value);
         const intersects = raycaster.intersectObjects(Object.values(buildingRefs.value)); // 只检测建筑物对象
+        // 有效hover
         if (intersects.length > 0) {
             const hovered = intersects[0].object;
-            console.log('Hovered:', hovered);
-            console.log('HoveredObject:', hoveredObject);
-            console.log('selectedObject', selectedObject);
-            console.log('hoveredInfo', hoveredInfo.value);
+            // 出提示
             if (!hoveredInfo.value?.visible || hoveredObject !== hovered) {
-                console.log('显示hoveredInfo”信息框');
                 hoveredInfo.value = {
                     visible: true,
                     x: event.clientX - 10,
@@ -309,19 +304,27 @@ onMounted(() => {
                     name: hovered.userData.name || '未知宿舍',
                 };
             }
+            // 如果切换了悬停对象，重置之前的 hoveredObject 的材质
             if (hoveredObject !== hovered) {
-                if (hoveredObject && hoveredObject !== selectedObject) {
+                // 恢复之前选中对象的材质为默认
+                if (hoveredObject) {
                     hoveredObject.material = hoveredObject.userData.originalMaterial;
                 }
-                if (hovered !== selectedObject) {
-                    hoveredObject = hovered;
+                // 设置新选中的对象的材质
+                hoveredObject = hovered;
+                // 如果这个是点击中的，则不变色
+                if (hoveredObject && selectedObject && hoveredObject === selectedObject) {
+                    hoveredObject.material = selectedMaterial;
+                    return;
+                }
+                if (hoveredObject.userData) {
                     hoveredObject.material = hoverMaterial;
                 }
             }
         }
         else {
             // 如果没有悬停对象，重置 hoveredObject
-            if (hoveredObject && hoveredObject !== selectedObject) {
+            if (hoveredObject && selectedObject && hoveredObject !== selectedObject) {
                 hoveredObject.material = hoveredObject.userData.originalMaterial;
                 hoveredObject = null;
             }
@@ -330,13 +333,13 @@ onMounted(() => {
                 hoveredInfo.value.visible = false;
             }
         }
-        console.log("全完成")
     }, 200); // 每 200ms 触发一次
 
     window.addEventListener('mousemove', onMouseMove);
 
     // 鼠标点击事件
     window.addEventListener('click', () => {
+        console.log('点击事件触发', hoveredObject);
         if (hoveredObject) {
             // 恢复之前选中对象的材质
             if (selectedObject) {
@@ -345,19 +348,8 @@ onMounted(() => {
 
             // 设置选中对象的材质
             selectedObject = hoveredObject;
-            selectedObject.material = new THREE.MeshPhysicalMaterial({
-                color: 0xd3d3d3,
-                metalness: 0.3, // 金属度
-                roughness: 0.2, // 粗糙度
-                transmission: 0.1, // 透射率（玻璃效果）
-                ior: 1.5, // 折射率
-                clearcoat: 0.2, // 清漆效果
-                clearcoatRoughness: 0.1, // 清漆粗糙度
-                transparent: true, // 启用透明
-                opacity: 1, // 透明度
-                side: selectedObject.userData.originalMaterial.side,
-            });
-
+            selectedObject.material = selectedMaterial
+            console.log('选中对象:', selectedObject);
             // 调用 focusOnModel 方法
             focusOnModel(selectedObject.name);
             // 动态分割建筑

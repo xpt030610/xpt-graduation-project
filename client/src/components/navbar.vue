@@ -18,6 +18,7 @@
                     <div v-if="showProfileBox" class="profile-box">
                         <p>用户名: {{ userInfo.userName }}</p>
                         <p>学号: {{ userInfo.userId }}</p>
+                        <p>角色：{{ userInfo.role }}</p>
                         <button @click="logout">退出登录</button>
                     </div>
                 </transition>
@@ -38,6 +39,7 @@ const showProfileBox = ref(false);
 const userInfo = ref({
     userName: '未知用户',
     userId: '未知学号',
+    role: '学生',
 });
 
 try {
@@ -45,6 +47,7 @@ try {
     console.log('解析后的 JWT:', decoded);
     userInfo.value.userName = decoded.userName || '未知用户';
     userInfo.value.userId = decoded.userId || '未知学号';
+    userInfo.value.role = decoded.role === student ? '学生' : "管理员";
 } catch (error) {
     console.error('JWT 解析失败:', error);
 }
