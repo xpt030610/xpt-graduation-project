@@ -19,7 +19,7 @@
   "dependencies": {
     "@types/three": "^0.174.0",
     "concurrently": "^9.1.2",
+    "jwt-decode": "^4.0.0",
     "three": "^0.174.0"
   }
 }
-

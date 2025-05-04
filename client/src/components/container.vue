@@ -54,12 +54,13 @@ const handleAction = (action) => {
 
 // 让相机对准目标模型
 const focusOnModel = (modelName) => {
+    console.log("buildingRefs.value", buildingRefs.value);
     const target = buildingRefs.value[modelName];
     if (target) {
         const boundingBox = new THREE.Box3().setFromObject(target);
         const center = boundingBox.getCenter(new THREE.Vector3());
         const size = boundingBox.getSize(new THREE.Vector3());
-        const distance = 1
+        const distance = 8
         // 使用 gsap 平滑移动相机位置
         gsap.to(camera.value.position, {
             x: center.x + distance,
@@ -91,11 +92,147 @@ const focusOnModel = (modelName) => {
     }
 };
 
+const splitBuildingIntoLayers = (building, segments = 5) => {
+    // 创建组来存放分割后的层
+    const layersGroup = new THREE.Group();
+    layersGroup.name = building.name;
+
+    // 获取建筑的世界坐标系包围盒
+    building.updateMatrixWorld(true);
+    const boundingBox = new THREE.Box3().setFromObject(building).clone()
+
+    const inverseMatrix = new THREE.Matrix4().copy(building.matrixWorld).invert();
+    boundingBox.applyMatrix4(inverseMatrix);
+
+    const height = boundingBox.max.y - boundingBox.min.y
+    const segmentHeight = height / segments;
+    console.log('boundingBox', boundingBox, boundingBox.max.y, boundingBox.min.y, 'height', height, 'segmentHeight', segmentHeight, 'building', building);
+
+
+    // // 克隆原始几何体
+    const originalGeometry = building.geometry.clone();
+    console.log('originalGeometry', originalGeometry)
+
+    for (let i = 0; i < segments; i++) {
+        const minY = boundingBox.min.y + i * segmentHeight;
+        const maxY = boundingBox.min.y + (i + 1) * segmentHeight;
+
+        console.log(`Processing Layer ${i}: minY = ${minY}, maxY = ${maxY}`);
+
+        const layerGeometry = new THREE.BufferGeometry();
+        const srcPos = originalGeometry.attributes.position;
+        const srcIndex = originalGeometry.index;
+        const newPos = [];
+        const newIndices = [];
+        const vertexMap = new Map(); // 用于映射新顶点的索引
+        const positionsArray = srcPos.array;
+
+        if (srcIndex) {
+            const indicesArray = srcIndex.array;
+
+            for (let j = 0; j < indicesArray.length; j += 3) {
+                const a = indicesArray[j];
+                const b = indicesArray[j + 1];
+                const c = indicesArray[j + 2];
+
+                const ax = positionsArray[a * 3];
+                const ay = positionsArray[a * 3 + 1];
+                const az = positionsArray[a * 3 + 2];
+
+                const bx = positionsArray[b * 3];
+                const by = positionsArray[b * 3 + 1];
+                const bz = positionsArray[b * 3 + 2];
+
+                const cx = positionsArray[c * 3];
+                const cy = positionsArray[c * 3 + 1];
+                const cz = positionsArray[c * 3 + 2];
+
+                if (
+                    (ay >= minY && ay <= maxY) ||
+                    (by >= minY && by <= maxY) ||
+                    (cy >= minY && cy <= maxY)
+                ) {
+                    const addVertex = (x, y, z) => {
+                        const key = `${x},${y},${z}`;
+                        if (!vertexMap.has(key)) {
+                            vertexMap.set(key, newPos.length / 3);
+                            newPos.push(x, y - minY, z);
+                        }
+                        return vertexMap.get(key);
+                    };
+
+                    const newA = addVertex(ax, ay, az);
+                    const newB = addVertex(bx, by, bz);
+                    const newC = addVertex(cx, cy, cz);
+
+                    newIndices.push(newA, newB, newC);
+                }
+            }
+
+            layerGeometry.setAttribute(
+                'position',
+                new THREE.Float32BufferAttribute(newPos, 3)
+            );
+            layerGeometry.setIndex(newIndices);
+            layerGeometry.computeVertexNormals();
+        }
+
+        const layer = new THREE.Mesh(
+            layerGeometry,
+            building.material.clone()
+        );
+        layer.position.y = minY; // 定位到正确高度
+        layer.name = `${building.name}-layer-${i}`;
+        layersGroup.add(layer);
+    }
+    layersGroup.position.copy(building.position); // 应用位置
+    layersGroup.rotation.copy(building.rotation); // 应用旋转
+    layersGroup.scale.copy(building.scale);       // 应用缩放
+    // 隐藏原始建筑
+    // building.visible = false;
+
+    return layersGroup;
+}
+
+const autoSplitBuildings = (model, segments = 5) => {
+    console.log('model', model, segments);
+    // 1. 收集需要处理的建筑对象
+    const buildingsToProcess = [];
+    model.traverse(obj => {
+        if (obj.isMesh && obj.name.startsWith('building')) {
+            buildingsToProcess.push(obj);
+        }
+    });
+
+    // 2. 处理每个建筑对象
+    buildingsToProcess.forEach(obj => {
+        // const layersGroup = splitBuildingIntoLayers(obj, segments);
+        // buildingRefs.value[layersGroup.name] = layersGroup;
+        // if (obj.parent) {
+        //     obj.parent.add(layersGroup);
+        //     obj.parent.remove(obj);
+
+        //     obj.geometry.dispose();
+        //     if (Array.isArray(obj.material)) {
+        //         obj.material.forEach(m => m.dispose());
+        //     }
+        // } else {
+        //     console.warn(`建筑 ${obj.name} 没有父级，直接添加到场景`);
+        //     scene.add(layersGroup);
+        // }
+        buildingRefs.value[obj.name] = obj;
+
+    });
+    console.log('model', model);
+
+    return model;
+}
 onMounted(() => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x101010);
     camera.value = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.localClippingEnabled = true;
     renderer.setSize(window.innerWidth, window.innerHeight);
     threeContainer.value.appendChild(renderer.domElement);
 
@@ -109,19 +246,16 @@ onMounted(() => {
 
     // 加载模型
     const loader = new GLTFLoader();
-    loader.load('/src/assets/school4.glb', (gltf) => {
-        const model = gltf.scene;
+    loader.load('/src/assets/school5.glb', (gltf) => {
+        // 自动切割所有建筑
+        const model = autoSplitBuildings(gltf.scene);
+        // const model = gltf.scene;
+        console.log('模型:', model);
         model.scale.set(1, 1, 1); // 调整模型大小
         model.position.set(0, 0, 0); // 设置模型位置
-        model.traverse((child) => {
-            if (child.isMesh && child.name.startsWith('building')) {
-                buildingRefs.value[child.name] = child;
-                child.userData.originalMaterial = child.material;
-                child.userData.name = `宿舍 ${child.name}`;
-            }
-        });
         scene.add(model);
-        focusOnModel('building')
+        console.log('模型加载完成:', scene);
+        focusOnModel('building-西一')
     },
         (xhr) => {
             console.log(`模型加载进度: ${(xhr.loaded / xhr.total) * 100}%`);
@@ -162,22 +296,26 @@ onMounted(() => {
         const intersects = raycaster.intersectObjects(Object.values(buildingRefs.value)); // 只检测建筑物对象
         if (intersects.length > 0) {
             const hovered = intersects[0].object;
-
+            console.log('Hovered:', hovered);
+            console.log('HoveredObject:', hoveredObject);
+            console.log('selectedObject', selectedObject);
+            console.log('hoveredInfo', hoveredInfo.value);
+            if (!hoveredInfo.value?.visible || hoveredObject !== hovered) {
+                console.log('显示hoveredInfo”信息框');
+                hoveredInfo.value = {
+                    visible: true,
+                    x: event.clientX - 10,
+                    y: event.clientY - 10,
+                    name: hovered.userData.name || '未知宿舍',
+                };
+            }
             if (hoveredObject !== hovered) {
                 if (hoveredObject && hoveredObject !== selectedObject) {
                     hoveredObject.material = hoveredObject.userData.originalMaterial;
                 }
-
                 if (hovered !== selectedObject) {
                     hoveredObject = hovered;
                     hoveredObject.material = hoverMaterial;
-
-                    hoveredInfo.value = {
-                        visible: true,
-                        x: event.clientX - 10,
-                        y: event.clientY - 10,
-                        name: hovered.userData.name || '未知宿舍',
-                    };
                 }
             }
         }
@@ -191,8 +329,8 @@ onMounted(() => {
             if (hoveredInfo.value.visible && !isHoveringInfoBox.value) {
                 hoveredInfo.value.visible = false;
             }
-
         }
+        console.log("全完成")
     }, 200); // 每 200ms 触发一次
 
     window.addEventListener('mousemove', onMouseMove);
@@ -222,6 +360,18 @@ onMounted(() => {
 
             // 调用 focusOnModel 方法
             focusOnModel(selectedObject.name);
+            // 动态分割建筑
+            // const layersGroup = splitBuildingIntoLayers(selectedObject);
+            // selectedObject.layersGroup = layersGroup;
+            // 将上半部分向上倾斜 45 度
+            // gsap.to(selectedObject.rotation, {
+            //     x: Math.PI / 4, // 绕 x 轴旋转 45 度
+            //     duration: 1, // 动画持续时间
+            //     ease: 'power2.out', // 缓动效果
+            // });
+
+
+            // tiltBuildingLayers(selectedObject);
         }
     });
 });

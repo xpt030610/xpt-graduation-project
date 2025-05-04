@@ -74,7 +74,11 @@ export class UsersService {
     }
 
     // 生成JWT
-    const payload = { sub: user.id, userId: user.userId };
+    const payload = {
+      userId: user.userId,
+      userName: user.userName,
+      role: user.role,
+    };
     return {
       statusCode: 200,
       message: '登录成功',

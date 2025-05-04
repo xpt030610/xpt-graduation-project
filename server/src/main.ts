@@ -8,6 +8,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const jwtService = app.get(JwtService);
   app.useGlobalGuards(new AuthGuard(jwtService));
-  await app.listen(3000);
+  await app.listen(3000, () => {
+    console.log(`Application is running on: http://localhost:3000`);
+  });
 }
 bootstrap();

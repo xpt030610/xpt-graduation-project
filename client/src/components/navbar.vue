@@ -9,15 +9,45 @@
             <button class="icon-button" @click="onNotificationClick">
                 <div class="icon-notification">消息通知</div> <!-- 消息通知图标 -->
             </button>
-            <button class="icon-button" @click="onProfileClick">
-                <div class="icon-profile">个人信息</div> <!-- 个人信息图标 -->
-            </button>
+
+            <div class="profile-container" @mouseenter="showProfileBox = true" @mouseleave="showProfileBox = false">
+                <div class="icon-button">
+                    <div class="icon-profile">个人信息</div> <!-- 个人信息图标 -->
+                </div>
+                <transition name="fade">
+                    <div v-if="showProfileBox" class="profile-box">
+                        <p>用户名: {{ userInfo.userName }}</p>
+                        <p>学号: {{ userInfo.userId }}</p>
+                        <button @click="logout">退出登录</button>
+                    </div>
+                </transition>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
+import { defineProps, defineEmits, ref } from 'vue';
+import { jwtDecode } from 'jwt-decode'; // 引入 jwt-decode 库用于解析 JWT
+import router from '../router';
+
+const accessToken = localStorage.getItem("access_token"); // 从后端获取的 JWT
+
+// 控制个人信息弹出框的显示状态
+const showProfileBox = ref(false);
+const userInfo = ref({
+    userName: '未知用户',
+    userId: '未知学号',
+});
+
+try {
+    const decoded = jwtDecode(accessToken);
+    console.log('解析后的 JWT:', decoded);
+    userInfo.value.userName = decoded.userName || '未知用户';
+    userInfo.value.userId = decoded.userId || '未知学号';
+} catch (error) {
+    console.error('JWT 解析失败:', error);
+}
 
 // 接收标题作为属性
 defineProps({
@@ -27,21 +57,13 @@ defineProps({
     },
 });
 
-// 定义事件，用于向父组件传递按钮点击事件
-const emit = defineEmits(['notificationClick', 'profileClick']);
-
-// 消息通知按钮点击事件
-const onNotificationClick = () => {
-    emit('notificationClick');
-};
-
-// 个人信息按钮点击事件
-const onProfileClick = () => {
-    emit('profileClick');
+const logout = () => {
+    localStorage.removeItem("access_token"); // 清除 JWT
+    router.push('/login'); // 跳转到登录页面
 };
 </script>
 
-<style scoped>
+<style scoped lang="less">
 /* 导航栏样式 */
 .navbar {
     position: fixed;
@@ -51,7 +73,7 @@ const onProfileClick = () => {
     justify-content: space-between;
     width: 100%;
     padding: 15px 20px;
-    border-radius: 16px;
+    border-radius: 0 0 8px 8px;
     background: rgba(0, 0, 0, 0.8);
     /* 增加背景不透明度 */
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
@@ -110,7 +132,7 @@ const onProfileClick = () => {
 }
 
 .icon-button:hover {
-    transform: scale(1.1);
+    transform: scale(1.03);
     /* 鼠标悬停放大效果 */
     opacity: 0.8;
     /* 鼠标悬停透明度变化 */
@@ -125,5 +147,64 @@ const onProfileClick = () => {
 .icon-profile::before {
     content: '👤';
     /* 个人信息图标 */
+}
+
+
+/* 进入和离开动画 */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: translateY(-10px);
+    /* 向上移动 */
+}
+
+/* 个人信息弹出框容器 */
+.profile-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: -15px 0;
+
+    /* 个人信息弹出框样式 */
+    .profile-box {
+        position: absolute;
+        top: 58px;
+        right: -20px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        width: 200px;
+        padding: 15px 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-top: 0;
+
+        p {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #ff4d4f;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            text-align: center;
+
+            &:hover {
+                background: #d9363e;
+            }
+        }
+    }
 }
 </style>
