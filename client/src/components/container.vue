@@ -3,14 +3,16 @@
     <div v-if="hoveredInfo.visible" class="info-box" :style="{ top: hoveredInfo.y + 'px', left: hoveredInfo.x + 'px' }"
         @mouseenter="isHoveringInfoBox = true" @mouseleave="isHoveringInfoBox = false">
         <h3>{{ hoveredInfo.name }}</h3>
-        <button @click="handleAction('edit')">编辑</button>
+        <button @click="handleAction('notice')">发送通知</button>
         <button @click="handleAction('delete')">删除</button>
     </div>
+    <NoticeForm v-if="isShowNoticeForm" @close="isShowNoticeForm = false" />
 </template>
 
 <script setup>
 import * as THREE from 'three';
-import { h, onMounted, ref } from 'vue';
+import { onUnmounted, onMounted, ref } from 'vue';
+import NoticeForm from './noticeForm.vue';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import gsap from 'gsap';
@@ -33,6 +35,7 @@ const hoveredInfo = ref({
     name: '',
 });
 const isHoveringInfoBox = ref(false); // 标记鼠标是否悬停在 info-box 上
+const isShowNoticeForm = ref(false); // 是否显示通知表单
 
 // 缓存悬停材质
 const hoverMaterial = new THREE.MeshPhysicalMaterial({
@@ -62,6 +65,14 @@ const selectedMaterial = new THREE.MeshPhysicalMaterial({
 
 // 操作按钮点击事件
 const handleAction = (action) => {
+    switch (action) {
+        case 'notice':
+            isShowNoticeForm.value = true;
+            break;
+
+        default:
+            break;
+    }
     console.log(`执行操作: ${action}`);
 };
 
@@ -226,6 +237,79 @@ const autoSplitBuildings = (model, segments = 5) => {
 
     return model;
 }
+
+// 优化后的鼠标移动事件
+const onMouseMove = throttle((event) => {
+    // 如果通知表单可见，则不处理鼠标移动事件
+    if (isShowNoticeForm.value) {
+        hoveredInfo.value.visible = false; // 隐藏信息框
+        return;
+    }
+
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera.value);
+    const intersects = raycaster.intersectObjects(Object.values(buildingRefs.value)); // 只检测建筑物对象
+    // 有效hover
+    if (intersects.length > 0) {
+        const hovered = intersects[0].object;
+        // 出提示
+        if (!hoveredInfo.value?.visible || hoveredObject !== hovered) {
+            hoveredInfo.value = {
+                visible: true,
+                x: event.clientX - 10,
+                y: event.clientY - 10,
+                name: hovered.userData.name || '未知宿舍',
+            };
+        }
+        // 如果切换了悬停对象，重置之前的 hoveredObject 的材质
+        if (hoveredObject !== hovered) {
+            // 恢复之前选中对象的材质为默认
+            if (hoveredObject) {
+                hoveredObject.material = hoveredObject.userData.originalMaterial;
+            }
+            // 设置新选中的对象的材质
+            hoveredObject = hovered;
+            // 如果这个是点击中的，则不变色
+            if (hoveredObject && selectedObject && hoveredObject === selectedObject) {
+                hoveredObject.material = selectedMaterial;
+                return;
+            }
+            if (hoveredObject.userData) {
+                hoveredObject.material = hoverMaterial;
+            }
+        }
+    }
+    else {
+        // 如果没有悬停对象，重置 hoveredObject
+        if (hoveredObject && selectedObject && hoveredObject !== selectedObject) {
+            hoveredObject.material = hoveredObject.userData.originalMaterial;
+            hoveredObject = null;
+        }
+        // 隐藏信息框
+        if (hoveredInfo.value.visible && !isHoveringInfoBox.value) {
+            hoveredInfo.value.visible = false;
+        }
+    }
+}, 200);
+
+const onClick = () => {
+    if (isShowNoticeForm.value) return; // 如果通知表单可见，则不处理点击事件
+
+    console.log('点击事件触发', hoveredObject);
+    if (hoveredObject) {
+        // 恢复之前选中对象的材质
+        if (selectedObject) {
+            selectedObject.material = selectedObject.userData.originalMaterial;
+        }
+
+        // 设置选中对象的材质
+        selectedObject = hoveredObject;
+        selectedObject.material = selectedMaterial
+        focusOnModel(selectedObject.name);
+    }
+}
+
 onMounted(() => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x101010);
@@ -286,86 +370,17 @@ onMounted(() => {
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // 优化后的鼠标移动事件
-    const onMouseMove = throttle((event) => {
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        raycaster.setFromCamera(mouse, camera.value);
-        const intersects = raycaster.intersectObjects(Object.values(buildingRefs.value)); // 只检测建筑物对象
-        // 有效hover
-        if (intersects.length > 0) {
-            const hovered = intersects[0].object;
-            // 出提示
-            if (!hoveredInfo.value?.visible || hoveredObject !== hovered) {
-                hoveredInfo.value = {
-                    visible: true,
-                    x: event.clientX - 10,
-                    y: event.clientY - 10,
-                    name: hovered.userData.name || '未知宿舍',
-                };
-            }
-            // 如果切换了悬停对象，重置之前的 hoveredObject 的材质
-            if (hoveredObject !== hovered) {
-                // 恢复之前选中对象的材质为默认
-                if (hoveredObject) {
-                    hoveredObject.material = hoveredObject.userData.originalMaterial;
-                }
-                // 设置新选中的对象的材质
-                hoveredObject = hovered;
-                // 如果这个是点击中的，则不变色
-                if (hoveredObject && selectedObject && hoveredObject === selectedObject) {
-                    hoveredObject.material = selectedMaterial;
-                    return;
-                }
-                if (hoveredObject.userData) {
-                    hoveredObject.material = hoverMaterial;
-                }
-            }
-        }
-        else {
-            // 如果没有悬停对象，重置 hoveredObject
-            if (hoveredObject && selectedObject && hoveredObject !== selectedObject) {
-                hoveredObject.material = hoveredObject.userData.originalMaterial;
-                hoveredObject = null;
-            }
-            // 隐藏信息框
-            if (hoveredInfo.value.visible && !isHoveringInfoBox.value) {
-                hoveredInfo.value.visible = false;
-            }
-        }
-    }, 200); // 每 200ms 触发一次
 
     window.addEventListener('mousemove', onMouseMove);
 
     // 鼠标点击事件
-    window.addEventListener('click', () => {
-        console.log('点击事件触发', hoveredObject);
-        if (hoveredObject) {
-            // 恢复之前选中对象的材质
-            if (selectedObject) {
-                selectedObject.material = selectedObject.userData.originalMaterial;
-            }
+    window.addEventListener('click', onClick);
+});
 
-            // 设置选中对象的材质
-            selectedObject = hoveredObject;
-            selectedObject.material = selectedMaterial
-            console.log('选中对象:', selectedObject);
-            // 调用 focusOnModel 方法
-            focusOnModel(selectedObject.name);
-            // 动态分割建筑
-            // const layersGroup = splitBuildingIntoLayers(selectedObject);
-            // selectedObject.layersGroup = layersGroup;
-            // 将上半部分向上倾斜 45 度
-            // gsap.to(selectedObject.rotation, {
-            //     x: Math.PI / 4, // 绕 x 轴旋转 45 度
-            //     duration: 1, // 动画持续时间
-            //     ease: 'power2.out', // 缓动效果
-            // });
-
-
-            // tiltBuildingLayers(selectedObject);
-        }
-    });
+// 在组件销毁时移除事件监听器
+onUnmounted(() => {
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('click', onClick);
 });
 </script>
 

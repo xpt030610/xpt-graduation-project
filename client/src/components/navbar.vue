@@ -47,7 +47,7 @@ try {
     console.log('解析后的 JWT:', decoded);
     userInfo.value.userName = decoded.userName || '未知用户';
     userInfo.value.userId = decoded.userId || '未知学号';
-    userInfo.value.role = decoded.role === student ? '学生' : "管理员";
+    userInfo.value.role = decoded.role === 'student' ? '学生' : "管理员";
 } catch (error) {
     console.error('JWT 解析失败:', error);
 }

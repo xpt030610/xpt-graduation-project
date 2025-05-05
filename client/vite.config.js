@@ -8,10 +8,18 @@ export default defineConfig({
   plugins: [
     vue(),
     Components({
-      resolvers: [TDesignResolver()], // 配置 TDesign 按需引入
+      resolvers: [
+        TDesignResolver({
+          library: "vue-next",
+        }),
+      ], // 配置 TDesign 按需引入
     }),
     AutoImport({
-      resolvers: [TDesignResolver()], // 自动引入 TDesign 相关 API
+      resolvers: [
+        TDesignResolver({
+          library: "vue-next",
+        }),
+      ], // 自动引入 TDesign 相关 API
     }),
   ],
   server: {

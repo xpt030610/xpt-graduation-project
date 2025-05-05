@@ -19,8 +19,8 @@
             <!-- 右侧登录表单 -->
             <div class="login-right">
                 <div class="login-header">
-                    <h1>欢迎登录</h1>
-                    <p class="subtitle">请使用您的账户信息登录</p>
+                    <h1>{{ isLogin ? '欢迎登录' : '注册' }}</h1>
+                    <p class="subtitle">请使用您的账户信息{{ isLogin ? '登录' : '注册' }}</p>
                 </div>
                 <form @submit.prevent="handleClick" class="login-form">
                     <div class="input-group">
@@ -35,7 +35,7 @@
                         <label for="password">密码</label>
                         <input id="password" v-model="password" type="password" placeholder="请输入密码" required />
                     </div>
-                    <button type="submit" class="login-button">登录</button>
+                    <button type="submit" class="login-button">{{ isLogin ? '登录' : '注册' }}</button>
                     <div class="login-footer">
                         <div v-if="isLogin" @click="() => { isLogin = false }">注册新账户</div>
                         <div v-if="!isLogin" @click="() => { isLogin = true }">已有账户</div>
@@ -52,7 +52,7 @@ import * as THREE from 'three';
 import axios from 'axios';
 import router from '../router';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+
 const isLogin = ref(true);
 const userId = ref('');
 const userName = ref('');
@@ -62,6 +62,7 @@ const handleClick = async () => {
     if (isLogin.value) {
         await handleLogin();
     } else {
+        console.log('注册用户:', userId.value, userName.value, password.value);
         await handleRegister();
     }
 
@@ -79,7 +80,7 @@ const handleRegister = async () => {
         MessagePlugin.success('注册成功，请登录');
         isLogin.value = true;
     } catch (error) {
-        console.error('注册失败:', error, error.response.data.message);
+        console.error('注册失败:', error.response?.data?.message);
         MessagePlugin.error('注册失败：' + (error.response?.data?.message || '未知错误'));
     }
 }
@@ -118,44 +119,6 @@ onMounted(() => {
     const renderer = new THREE.WebGLRenderer({ alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('threejs-background').appendChild(renderer.domElement);
-
-    // // 设置相机为俯视视角
-    // camera.position.set(-1, 1, 1); // 设置相机在模型上方
-    // camera.lookAt(0, 0, 0); // 让相机朝向模型中心
-
-    // // 添加光源
-    // const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // 环境光
-    // scene.add(ambientLight);
-
-    // const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // 方向光
-    // directionalLight.position.set(10, 20, 10);
-    // scene.add(directionalLight);
-
-    // // 加载 GLTF 模型
-    // const loader = new GLTFLoader();
-    // loader.load(
-    //     '/src/assets/school4.glb', // 替换为你的模型路径
-    //     (gltf) => {
-    //         const model = gltf.scene;
-    //         model.scale.set(1, 1, 1); // 调整模型大小
-    //         model.position.set(0, 0, 0); // 设置模型位置
-    //         scene.add(model);
-    //     },
-    //     (xhr) => {
-    //         console.log(`模型加载进度: ${(xhr.loaded / xhr.total) * 100}%`);
-    //     },
-    //     (error) => {
-    //         console.error('模型加载失败:', error);
-    //     }
-    // );
-
-    // // 动画循环
-    // const animate = () => {
-    //     requestAnimationFrame(animate);
-    //     renderer.render(scene, camera);
-    // };
-
-    // animate();
 
     // 创建圆角矩形纹理（支持多种颜色）
     const createRoundedRectTexture = (width, height, radius, colors) => {
@@ -416,6 +379,7 @@ onMounted(() => {
 
 .input-group label {
     font-size: 14px;
+    font-weight: 700;
     color: #ddd;
     margin-bottom: 5px;
 }
@@ -443,6 +407,7 @@ onMounted(() => {
     padding: 12px;
     font-size: 16px;
     font-weight: bold;
+    margin-top: 20px;
     color: white;
     background: linear-gradient(90deg, #007aff, #0051ff);
     border: none;
