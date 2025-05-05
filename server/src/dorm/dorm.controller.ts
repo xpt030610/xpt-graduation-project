@@ -78,4 +78,30 @@ export class DormController {
       );
     }
   }
+
+  // 查询宿舍楼某一层的所有宿舍
+  @Get('getRoomsByFloor')
+  async getRoomsByFloor(
+    @Body() searchDto: { buildingId: string; floor: number },
+  ) {
+    try {
+      const rooms = await this.dormService.getRoomsByFloor(
+        searchDto.buildingId,
+        searchDto.floor,
+      );
+      return {
+        success: true,
+        message: '查询成功',
+        data: rooms,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
 }

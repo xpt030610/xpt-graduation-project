@@ -234,7 +234,7 @@ users.forEach((user) => {
     )[0]; // 随机选择一个床位
     db.Bed.updateOne({ _id: randomBed._id }, { $set: { isOccupied: true } }); // 标记床位为已入住
     db.Users.updateOne(
-      { _id: user._id },
+      { userId: user.userId },
       { $set: { bedId: randomBed._id, roomId: randomBed.roomId } } // 为用户分配床位和房间
     );
   }

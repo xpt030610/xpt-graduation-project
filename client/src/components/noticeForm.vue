@@ -81,6 +81,7 @@ const handleSubmit = () => {
 
 // 取消逻辑
 const handleCancel = () => {
+    this.$emit('close');
     resetForm();
 };
 

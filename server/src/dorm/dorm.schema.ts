@@ -31,7 +31,7 @@ export class Room {
   buildingId: string;
   // 楼层
   @Prop({ required: true })
-  floor: string;
+  floor: number;
   // 床位数
   @Prop({ required: true })
   bedCount: number;

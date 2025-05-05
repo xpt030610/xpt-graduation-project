@@ -138,4 +138,46 @@ export class DormService {
       throw new Error(`查询房间指标失败: ${error.message}`);
     }
   }
+
+  // 查询宿舍楼某一层的所有宿舍
+  async getRoomsByFloor(buildingId: string, floor: number): Promise<any> {
+    try {
+      // 查询该宿舍楼的所有房间
+      const rooms = await this.roomModel
+        .find({ buildingId, floor })
+        .select('roomId bedCount')
+        .lean()
+        .exec();
+
+      console.log('rooms', rooms, buildingId, floor);
+      // 返回这些宿舍并带上他们的宿舍成员
+      const roomDetails = await Promise.all(
+        rooms.map(async (room) => {
+          // 查询每个房间的宿舍成员
+          const members = await this.userModel
+            .find({ roomId: room.roomId }) // 根据 roomId 查询用户
+            .select('userName userId') // 仅返回用户名和用户ID
+            .lean()
+            .exec();
+
+          return {
+            roomId: room.roomId,
+            totalMembers: members.length,
+            members,
+          };
+        }),
+      );
+      console.log('roomDetails', roomDetails);
+      const total = roomDetails.reduce(
+        (acc, room) => acc + room.totalMembers,
+        0,
+      );
+      return {
+        total,
+        roomDetails,
+      };
+    } catch (error) {
+      throw new Error(`查询宿舍楼某一层的宿舍失败: ${error.message}`);
+    }
+  }
 }
