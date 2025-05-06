@@ -42,11 +42,12 @@
  *    - createdTime: 创建时间
  *
  * 7. Notice（公告）:
- *    - buildingId: 所属宿舍楼ID（二选一）
- *    - roomId: 所属房间ID（二选一）
+ *    - noticeId: 公告ID (唯一)
+ *    - buildingId: 所属宿舍楼ID
  *    - releaseId: 发布人ID (User.userId,3121005314)
- *    - type: 公告类型 (building/room)
- *    - status: 公告状态 (published/draft)
+ *    - type: 公告类型 (emergency/normal)
+ *    - status: 公告状态 (published/changed/cancelled)
+ *    - userList: 可见用户列表 (userId)
  *    - readList：已读用户列表 (userId)
  *    - title: 公告标题
  *    - content: 公告内容

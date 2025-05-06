@@ -7,8 +7,8 @@ import {
   RoomSchema,
   Building,
   BuildingSchema,
-  Announcement,
-  AnnouncementSchema,
+  Notice,
+  NoticeSchema,
 } from './dorm.schema';
 import { DormService } from './dorm.service';
 import { DormController } from './dorm.controller';
@@ -20,7 +20,7 @@ import { User, UserSchema } from '@users/users.schema';
       { name: Bed.name, schema: BedSchema },
       { name: Room.name, schema: RoomSchema },
       { name: Building.name, schema: BuildingSchema },
-      { name: Announcement.name, schema: AnnouncementSchema },
+      { name: Notice.name, schema: NoticeSchema },
       { name: User.name, schema: UserSchema },
     ]),
   ],

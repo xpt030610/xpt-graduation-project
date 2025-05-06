@@ -58,7 +58,11 @@
                         <div class="label">通知标题</div>
                         <t-input id="title" v-model="title" placeholder="请输入通知标题" />
                     </div>
-
+                    <!-- 通知重要级 -->
+                    <div class="form-group">
+                        <div class="label">公告重要级</div>
+                        <t-select id="noticeType" v-model="noticeType" placeholder="请选择重要级" :options="noticeTypeList" />
+                    </div>
                     <!-- 通知内容 -->
                     <div class="form-group">
                         <div class="label">通知内容</div>
@@ -93,6 +97,7 @@ const props = defineProps({
 const notifyTarget = ref(''); // 通知对象类型（person, floor, room）
 const selectedFloor = ref(); // 选择的楼层
 const title = ref(''); // 通知标题
+const noticeType = ref('normal'); // 通知重要级
 const content = ref(''); // 通知内容
 const selectedRoom = ref(''); // 选择的宿舍
 const roomList = ref([]); // 宿舍列表
@@ -113,19 +118,42 @@ const floorOptions = [
     { label: '五楼', value: 5 },
 ];
 
+const noticeTypeList = [
+    { label: '普通通知', value: 'normal' },
+    { label: '紧急通知', value: 'urgent' },
+    { label: '重要通知', value: 'important' },
+];
+
 const roomOptions = ref([]); // 宿舍选项
 const studentOptions = ref([]); // 学生选项
 
 // 表单提交逻辑
-const handleSubmit = () => {
-    console.log('通知发送:', {
-        notifyTarget: notifyTarget.value,
+const handleSubmit = async () => {
+    const notice = {
+        buildingId: props.buildingId,
+        releaseId: 'admin', // 这里可以根据实际情况设置
+        type: noticeType.value,
+        status: 'published',
+        userList: studentList.value.map((student) => ({ userId: student.userId, userName: student.userName })),
+        readList: [], // 初始为空
         title: title.value,
         content: content.value,
-    });
-    alert('通知已发送！');
-    resetForm();
+    }
+    try {
+        const response = await Axios.post('/dorm/notifyMembers', notice);
+        const data = response.data;
+        MessagePlugin.success('通知发送成功！');
+        console.log('通知发送结果:', notice, data);
+
+        // 重置表单
+        resetForm();
+    } catch (error) {
+        console.error('通知发送失败:', error);
+        // 弹出错误提示
+        MessagePlugin.error('通知发送失败，请稍后重试！');
+    }
 };
+
 const changeType = () => {
     selectedRoom.value = ''; // 重置宿舍选择
     selectedFloor.value = ''; // 重置楼层选择

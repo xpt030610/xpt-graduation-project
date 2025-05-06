@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Room, Bed } from './dorm.schema';
+import { Room, Bed, Notice } from './dorm.schema';
 import { User } from '@users/users.schema';
 
 @Injectable()
@@ -10,6 +10,7 @@ export class DormService {
     @InjectModel(Room.name) private readonly roomModel: Model<Room>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(Bed.name) private readonly bedModel: Model<Bed>,
+    @InjectModel(Notice.name) private readonly noticeModel: Model<Bed>,
   ) {}
 
   // 查询某宿舍楼的空余宿舍
@@ -178,6 +179,66 @@ export class DormService {
       };
     } catch (error) {
       throw new Error(`查询宿舍楼某一层的宿舍失败: ${error.message}`);
+    }
+  }
+
+  // 公告通知成员
+  async notifyMembers(
+    buildingId: string,
+    releaseId: string,
+    type: string,
+    status: string,
+    userList: string[],
+    readlist: string[],
+    title: string,
+    content: string,
+    noticeId?: string,
+  ): Promise<any> {
+    try {
+      if (noticeId) {
+        // 更新通知
+        await this.noticeModel.findByIdAndUpdate(
+          noticeId,
+          {
+            buildingId,
+            releaseId,
+            type,
+            status,
+            userList,
+            readlist,
+            title,
+            content,
+          },
+          { new: true },
+        );
+        // 返回更新后的通知
+        return {
+          success: true,
+          message: '通知更新成功',
+        };
+      } else {
+        // 创建新的通知
+        const noticeId = `${buildingId}-${Date.now()}`;
+        const newNotice = new this.noticeModel({
+          noticeId,
+          buildingId,
+          releaseId,
+          type,
+          status,
+          userList,
+          readlist,
+          title,
+          content,
+        });
+        await newNotice.save();
+        // 返回通知结果
+        return {
+          success: true,
+          newNotice,
+        };
+      }
+    } catch (error) {
+      throw new Error(`通知成员失败: ${error.message}`);
     }
   }
 }

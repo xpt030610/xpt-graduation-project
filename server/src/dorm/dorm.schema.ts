@@ -4,7 +4,7 @@ import { Document } from 'mongoose';
 export type BedDocument = Bed & Document;
 export type RoomDocument = Room & Document;
 export type BuildingDocument = Building & Document;
-export type AnnouncementDocument = Announcement & Document;
+export type NoticeDocument = Notice & Document;
 
 @Schema({ collection: 'Bed', timestamps: true })
 export class Bed {
@@ -58,14 +58,29 @@ export class Building {
   floors: number;
 }
 
-@Schema({ collection: 'Announcement', timestamps: true })
-export class Announcement {
-  // 所属宿舍楼ID（二选一）
-  @Prop({ required: false })
+@Schema({ collection: 'Notice', timestamps: true })
+export class Notice {
+  // 公告ID
+  @Prop({ required: true, unique: true })
+  noticeId: string;
+  // 所属宿舍楼ID
+  @Prop({ required: true })
   buildingId: string;
-  // 所属房间ID（二选一）
-  @Prop({ required: false })
-  roomId: string;
+  // 发布人ID
+  @Prop({ required: true })
+  releaseId: string;
+  // 类型
+  @Prop({ required: true })
+  type: string;
+  // 公告状态
+  @Prop({ required: true })
+  status: string;
+  // 公告列表
+  @Prop({ required: true })
+  userList: string[];
+  // 已读列表
+  @Prop({ required: true })
+  readList: string[];
   // 公告标题
   @Prop({ required: true })
   title: string;
@@ -74,10 +89,10 @@ export class Announcement {
   content: string;
   // 创建时间
   @Prop({ default: Date.now })
-  createdAt: Date;
+  createdTime: Date;
 }
 
 export const BedSchema = SchemaFactory.createForClass(Bed);
 export const RoomSchema = SchemaFactory.createForClass(Room);
 export const BuildingSchema = SchemaFactory.createForClass(Building);
-export const AnnouncementSchema = SchemaFactory.createForClass(Announcement);
+export const NoticeSchema = SchemaFactory.createForClass(Notice);

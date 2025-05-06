@@ -104,4 +104,48 @@ export class DormController {
       );
     }
   }
+
+  // 公告通知成员
+  @Post('notifyMembers')
+  async notifyMembers(
+    @Body()
+    notifyDto: {
+      buildingId: string;
+      releaseId: string;
+      type: string;
+      status: string;
+      userList: string[];
+      readList: string[];
+      title: string;
+      content: string;
+      noticeId?: string;
+    },
+  ) {
+    try {
+      const result = await this.dormService.notifyMembers(
+        notifyDto.buildingId,
+        notifyDto.releaseId,
+        notifyDto.type,
+        notifyDto.status,
+        notifyDto.userList,
+        notifyDto.readList,
+        notifyDto.title,
+        notifyDto.content,
+        notifyDto.noticeId,
+      );
+      return {
+        success: true,
+        message: '通知成功',
+        data: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
 }
