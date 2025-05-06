@@ -80,7 +80,7 @@ export class DormController {
   }
 
   // 查询宿舍楼某一层的所有宿舍
-  @Get('getRoomsByFloor')
+  @Post('getRoomsByFloor')
   async getRoomsByFloor(
     @Body() searchDto: { buildingId: string; floor: number },
   ) {

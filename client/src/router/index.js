@@ -14,6 +14,7 @@ const routes = [
     name: "Login",
     component: Login,
     meta: { requiresAuth: false }, // 不需要登录
+    key: "login",
   },
 ];
 

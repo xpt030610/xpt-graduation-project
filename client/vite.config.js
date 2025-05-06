@@ -29,6 +29,11 @@ export default defineConfig({
         changeOrigin: true, // 是否改变请求源
         rewrite: (path) => path.replace(/^\/users/, "/users"), // 可选：重写路径
       },
+      "/dorm": {
+        target: "http://localhost:3000", // 目标服务器地址
+        changeOrigin: true, // 是否改变请求源
+        rewrite: (path) => path.replace(/^\/dorm/, "/dorm"), // 可选：重写路径
+      },
     },
   },
 });

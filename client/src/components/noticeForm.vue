@@ -1,64 +1,102 @@
 <template>
-    <div class="notice-form-overlay">
+    <div class="notice-form-overlay" @click.self="handleCancel">
         <div class="notice-form">
+            <CloseIcon class="close-icon" @click="handleCancel" />
             <h2>发送通知</h2>
 
-            <!-- 通知成员选择 -->
-            <div class="form-group">
-                <div class="label">通知成员</div>
-                <t-select id="notifyTarget" v-model="notifyTarget" placeholder="请选择通知对象" :options="notifyOptions" />
-            </div>
+            <div class="form-content">
+                <!-- 左侧：选择学生 -->
+                <div class="form-left">
+                    <!-- 通知成员选择 -->
+                    <div class="form-group">
+                        <div class="label">通知成员</div>
+                        <t-select id="notifyTarget" v-model="notifyTarget" placeholder="请选择通知对象"
+                            :options="notifyOptions" @change="changeType" />
+                    </div>
 
-            <!-- 楼层选择（仅当选择宿舍时显示） -->
-            <div class="form-group" v-if="notifyTarget === 'room'">
-                <div class="label">选择楼层</div>
-                <t-select id="floorSelect" v-model="selectedFloor" placeholder="请选择楼层" :options="floorOptions"
-                    @change="fetchRooms" />
-            </div>
+                    <!-- 楼层选择 -->
+                    <div class="form-group" v-if="notifyTarget">
+                        <div class="label">选择楼层</div>
+                        <t-select id="floorSelect" v-model="selectedFloor" placeholder="请选择楼层" :options="floorOptions"
+                            @change="fetchRooms" />
+                    </div>
 
-            <!-- 宿舍选择（仅当选择宿舍时显示） -->
-            <div class="form-group" v-if="notifyTarget === 'room' && selectedFloor">
-                <div class="label">选择宿舍</div>
-                <t-select id="roomSelect" v-model="selectedRoom" placeholder="请选择宿舍" :options="roomOptions"
-                    @change="fetchStudents" />
-            </div>
+                    <!-- 宿舍选择 -->
+                    <div class="form-group" v-if="notifyTarget !== 'floor' && selectedFloor">
+                        <div class="label">选择宿舍</div>
+                        <t-select id="roomSelect" v-model="selectedRoom" placeholder="请选择宿舍" :options="roomOptions"
+                            @change="fetchStudents" />
+                    </div>
 
-            <!-- 学生名单-->
-            <div class="form-group" v-if="notifyTarget === 'room' && selectedRoom">
-                <div class="label">宿舍成员</div>
-                <div class="student-list">
-                    {{ studentList.join('、') }} 等 {{ studentList.length }} 名同学
+                    <!-- 学生选择 -->
+                    <div class="form-group" v-if="notifyTarget === 'person' && selectedRoom">
+                        <div class="label">选择学生</div>
+                        <t-select id="studentSelect" v-model="studentList" placeholder="请选择学生"
+                            :options="studentOptions" />
+                    </div>
+
+                    <!-- 学生名单 -->
+                    <div class="form-group"
+                        v-if="(notifyTarget === 'room' || notifyTarget === 'floor') && studentList.length">
+                        <div class="label">通知成员</div>
+                        <div class="student-list">
+                            <t-tag v-for="(student, index) in studentList" :key="index" class="student-tag">
+                                {{ student.userName }}
+                            </t-tag>
+
+                        </div>
+                        <div v-if="studentList.length" class="text">
+                            {{ `共 ${studentList.length} 名同学` }}
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- 通知标题 -->
-            <div class="form-group">
-                <div class="label">通知标题</div>
-                <t-input id="title" v-model="title" placeholder="请输入通知标题" />
-            </div>
+                <!-- 右侧：填写标题和内容 -->
+                <div class="form-right">
+                    <!-- 通知标题 -->
+                    <div class="form-group">
+                        <div class="label">通知标题</div>
+                        <t-input id="title" v-model="title" placeholder="请输入通知标题" />
+                    </div>
 
-            <!-- 通知内容 -->
-            <div class="form-group">
-                <div class="label">通知内容</div>
-                <t-textarea id="content" v-model="content" placeholder="请输入通知内容" rows="5" />
-            </div>
+                    <!-- 通知内容 -->
+                    <div class="form-group">
+                        <div class="label">通知内容</div>
+                        <t-textarea id="content" v-model="content" placeholder="请输入通知内容" rows="5" />
+                    </div>
 
-            <!-- 提交按钮 -->
-            <div class="form-actions">
-                <t-button theme="primary" @click="handleSubmit">发送通知</t-button>
-                <t-button theme="default" @click="handleCancel">取消</t-button>
+                    <!-- 提交按钮 -->
+                    <div class="form-actions">
+                        <button theme="primary" @click="handleSubmit">发送通知</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </template>
 <script setup>
-import { ref } from 'vue';
+import { ref, defineProps, defineEmits } from 'vue';
+import Axios from '../utils/axios';
+import { CloseIcon } from 'tdesign-icons-vue-next';
+
+const emit = defineEmits(['close']);
+
+// 接收传进来的 props
+const props = defineProps({
+    buildingId: {
+        type: String,
+        default: '西一', // 默认标题
+    },
+});
 
 // 表单数据
 const notifyTarget = ref(''); // 通知对象类型（person, floor, room）
-const targetDetail = ref(''); // 具体目标（姓名、楼层号、宿舍号）
+const selectedFloor = ref(); // 选择的楼层
 const title = ref(''); // 通知标题
 const content = ref(''); // 通知内容
+const selectedRoom = ref(''); // 选择的宿舍
+const roomList = ref([]); // 宿舍列表
+const studentList = ref([]); // 学生列表
 
 // 通知对象选项
 const notifyOptions = [
@@ -67,36 +105,92 @@ const notifyOptions = [
     { label: '通知某宿舍', value: 'room' },
 ];
 
+const floorOptions = [
+    { label: '一楼', value: 1 },
+    { label: '二楼', value: 2 },
+    { label: '三楼', value: 3 },
+    { label: '四楼', value: 4 },
+    { label: '五楼', value: 5 },
+];
+
+const roomOptions = ref([]); // 宿舍选项
+const studentOptions = ref([]); // 学生选项
+
 // 表单提交逻辑
 const handleSubmit = () => {
     console.log('通知发送:', {
         notifyTarget: notifyTarget.value,
-        targetDetail: targetDetail.value,
         title: title.value,
         content: content.value,
     });
     alert('通知已发送！');
     resetForm();
 };
+const changeType = () => {
+    selectedRoom.value = ''; // 重置宿舍选择
+    selectedFloor.value = ''; // 重置楼层选择
+    studentList.value = []; // 重置学生选择
+    roomOptions.value = []; // 重置宿舍选项
+    studentOptions.value = []; // 重置学生选项
+}
 
-// 取消逻辑
-const handleCancel = () => {
-    this.$emit('close');
-    resetForm();
-};
+const fetchRooms = async () => {
+    selectedRoom.value = ''; // 重置宿舍选择
+    studentList.value = []; // 重置学生选择
+    console.log('buidingId:', props.buildingId, selectedFloor.value);
+    const response = await Axios.post('/dorm/getRoomsByFloor', {
+        buildingId: props.buildingId,
+        floor: selectedFloor.value,
+    });
+    const data = response.data;
+    console.log('获取宿舍:', data, response);
+    // 只显示有人的宿舍
+    roomList.value = data.roomDetails.filter((room) => room.members.length > 0);
+    roomOptions.value = roomList.value.map((room) => ({
+        label: `${room.roomId}(${room.members.length}人)`,
+        value: room.roomId,
+    }));
+    // 根据选择的楼层获取宿舍列表,全部选取
+    if (notifyTarget.value === 'floor') {
+        studentList.value = roomList.value.reduce((acc, room) => {
+            return acc.concat(room.members.map((student) => ({
+                userName: student.userName,
+                userId: student.userId,
+            })));
+        }, []);
+    }
+
+}
+
+const fetchStudents = () => {
+    const selectedRoomData = roomList.value.find((room) => room.roomId === selectedRoom.value);
+    if (selectedRoomData) {
+        studentList.value = selectedRoomData.members.map((student) => ({
+            userName: student.userName,
+            userId: student.userId,
+        }));
+        studentOptions.value = studentList.value.map((student) => ({
+            label: student.userName,
+            value: student.userId,
+        }));
+    } else {
+        studentList.value = [];
+    }
+    console.log('获取学生:', studentList.value);
+}
 
 // 重置表单
 const resetForm = () => {
     notifyTarget.value = '';
-    targetDetail.value = '';
     title.value = '';
     content.value = '';
 };
 
-
-const fetchRooms = () => {
-
-}
+// 取消逻辑
+const handleCancel = () => {
+    emit('close');
+    resetForm();
+};
 </script>
 
 <style scoped lang="less">
@@ -125,11 +219,30 @@ const fetchRooms = () => {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(20px);
     color: white;
+
+    .close-icon {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        cursor: pointer;
+        font-size: 24px;
+        color: #ddd;
+    }
+
+    h2 {
+        margin-bottom: 20px;
+        text-align: center;
+    }
 }
 
-.notice-form h2 {
-    margin-bottom: 20px;
-    text-align: center;
+.form-content {
+    display: flex;
+    gap: 20px;
+}
+
+.form-left,
+.form-right {
+    flex: 1;
 }
 
 .form-group {
@@ -142,10 +255,39 @@ const fetchRooms = () => {
         margin-bottom: 5px;
     }
 
+    .student-list {
+        display: flex;
+        align-items: center;
+
+        .student-tag {
+            margin-right: 5px;
+        }
+    }
+
+    .text {
+        display: flex;
+        color: #ddd;
+        font-size: 12px;
+        font-weight: 400;
+        margin-top: 5px;
+    }
 }
 
-.form-group .form-actions {
+.form-actions {
     display: flex;
     justify-content: space-between;
+
+    button {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        font-weight: bold;
+        color: white;
+        background: linear-gradient(90deg, #007aff, #0051ff);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.2s ease;
+    }
 }
 </style>

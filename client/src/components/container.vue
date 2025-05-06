@@ -6,7 +6,7 @@
         <button @click="handleAction('notice')">发送通知</button>
         <button @click="handleAction('delete')">删除</button>
     </div>
-    <NoticeForm v-if="isShowNoticeForm" @close="isShowNoticeForm = false" />
+    <NoticeForm v-if="isShowNoticeForm" :buildingId="hoveredInfo.name || '西一'" @close="isShowNoticeForm = false" />
 </template>
 
 <script setup>
@@ -255,11 +255,16 @@ const onMouseMove = throttle((event) => {
         const hovered = intersects[0].object;
         // 出提示
         if (!hoveredInfo.value?.visible || hoveredObject !== hovered) {
+            let name = hovered.userData.name
+            if (name) {
+                name = name.split("-")[1] || '未知宿舍'
+            }
+            console.log('hovered', hovered.userData.name, name);
             hoveredInfo.value = {
                 visible: true,
                 x: event.clientX - 10,
                 y: event.clientY - 10,
-                name: hovered.userData.name || '未知宿舍',
+                name
             };
         }
         // 如果切换了悬停对象，重置之前的 hoveredObject 的材质
