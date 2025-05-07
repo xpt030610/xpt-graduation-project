@@ -68,6 +68,7 @@ const handleAction = (action) => {
     switch (action) {
         case 'notice':
             isShowNoticeForm.value = true;
+            hoveredInfo.value.visible = false; // 隐藏信息框
             break;
 
         default:
@@ -212,8 +213,6 @@ const splitBuildingIntoLayers = (building, segments = 5) => {
     layersGroup.position.copy(building.position); // 应用位置
     layersGroup.rotation.copy(building.rotation); // 应用旋转
     layersGroup.scale.copy(building.scale);       // 应用缩放
-    // 隐藏原始建筑
-    // building.visible = false;
 
     return layersGroup;
 }
@@ -240,12 +239,6 @@ const autoSplitBuildings = (model, segments = 5) => {
 
 // 优化后的鼠标移动事件
 const onMouseMove = throttle((event) => {
-    // 如果通知表单可见，则不处理鼠标移动事件
-    if (isShowNoticeForm.value) {
-        hoveredInfo.value.visible = false; // 隐藏信息框
-        return;
-    }
-
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera.value);
@@ -299,8 +292,6 @@ const onMouseMove = throttle((event) => {
 }, 200);
 
 const onClick = () => {
-    if (isShowNoticeForm.value) return; // 如果通知表单可见，则不处理点击事件
-
     console.log('点击事件触发', hoveredObject);
     if (hoveredObject) {
         // 恢复之前选中对象的材质
@@ -368,6 +359,10 @@ onMounted(() => {
     };
     animate();
 
+    const container = threeContainer.value;
+    container.addEventListener('mousemove', onMouseMove);
+    container.addEventListener('click', onClick);
+
     // 窗口大小调整事件
     window.addEventListener('resize', () => {
         camera.value.aspect = window.innerWidth / window.innerHeight;
@@ -375,11 +370,6 @@ onMounted(() => {
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-
-    window.addEventListener('mousemove', onMouseMove);
-
-    // 鼠标点击事件
-    window.addEventListener('click', onClick);
 });
 
 // 在组件销毁时移除事件监听器

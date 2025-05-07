@@ -82,6 +82,7 @@
 import { ref, defineProps, defineEmits } from 'vue';
 import Axios from '../utils/axios';
 import { CloseIcon } from 'tdesign-icons-vue-next';
+import { jwtDecode } from 'jwt-decode';
 
 const emit = defineEmits(['close']);
 
@@ -129,9 +130,12 @@ const studentOptions = ref([]); // 学生选项
 
 // 表单提交逻辑
 const handleSubmit = async () => {
+    const accessToken = localStorage.getItem("access_token");
+    const decoded = jwtDecode(accessToken);
     const notice = {
         buildingId: props.buildingId,
-        releaseId: 'admin', // 这里可以根据实际情况设置
+        releaseId: decoded.userId || '未知学号',
+        releaseName: decoded.userName || '未知用户',
         type: noticeType.value,
         status: 'published',
         userList: studentList.value.map((student) => ({ userId: student.userId, userName: student.userName })),

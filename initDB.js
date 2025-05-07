@@ -65,6 +65,20 @@
 const buildings = [
   { name: "西一", floors: 6 },
   { name: "西二", floors: 5 },
+  { name: "西三", floors: 5 },
+  { name: "西四", floors: 5 },
+  { name: "西五", floors: 4 },
+  { name: "西六", floors: 5 },
+  { name: "西七", floors: 5 },
+  { name: "西八", floors: 6 },
+  { name: "西九", floors: 5 },
+  { name: "西十", floors: 5 },
+  { name: "西十一", floors: 5 },
+  { name: "西十二", floors: 5 },
+  { name: "西十三", floors: 6 },
+  { name: "西十四", floors: 5 },
+  { name: "西十五", floors: 5 },
+  { name: "西十六", floors: 5 },
 ];
 
 const buildingIds = buildings.map((building) => {
@@ -184,6 +198,11 @@ function generateRandomName() {
     "尹",
     "潘",
     "曾",
+    "冯",
+    "邓",
+    "蔡",
+    "彭",
+    "阮",
   ];
   const givenNames = [
     "伟",
@@ -191,12 +210,19 @@ function generateRandomName() {
     "娜",
     "敏",
     "静",
+    "磊",
+    "军",
+    "洋",
+    "涛",
+    "静",
     "秀",
     "丽",
     "强",
     "磊",
     "军",
     "小龙",
+    "小明",
+    "小刚",
   ];
   const surname = surnames[Math.floor(Math.random() * surnames.length)];
   const givenName = givenNames[Math.floor(Math.random() * givenNames.length)];
@@ -212,9 +238,9 @@ function generateRandomPassword(length = 6) {
   return password;
 }
 
-// 生成 50 个随机用户
+// 生成 1000 个随机用户
 const users = [];
-for (let i = 0; i < 50; i++) {
+for (let i = 0; i < 1000; i++) {
   users.push({
     userName: generateRandomName(),
     userId: `312100${String(i).padStart(4, "0")}`, // 学号以 312100 开头，后接 4 位数字

@@ -112,6 +112,7 @@ export class DormController {
     notifyDto: {
       buildingId: string;
       releaseId: string;
+      releaseName: string;
       type: string;
       status: string;
       userList: string[];
@@ -125,6 +126,7 @@ export class DormController {
       const result = await this.dormService.notifyMembers(
         notifyDto.buildingId,
         notifyDto.releaseId,
+        notifyDto.releaseName,
         notifyDto.type,
         notifyDto.status,
         notifyDto.userList,
@@ -137,6 +139,27 @@ export class DormController {
         success: true,
         message: '通知成功',
         data: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  // 某个成员的所有通知
+  @Post('getMemberNotices')
+  async getMemberNotices(@Body() searchDto: { userId: string }) {
+    try {
+      const notices = await this.dormService.getMemberNotices(searchDto.userId);
+      return {
+        success: true,
+        message: '查询成功',
+        data: notices,
       };
     } catch (error) {
       throw new HttpException(

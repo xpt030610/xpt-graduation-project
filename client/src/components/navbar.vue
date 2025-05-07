@@ -2,7 +2,7 @@
     <div class="navbar">
         <!-- 左侧标题 -->
         <div class="navbar-left">
-            <h1>{{ title }}</h1>
+            <h1>三维宿舍管理智能化管理平台</h1>
         </div>
         <!-- 右侧功能按钮 -->
         <div class="navbar-right">
@@ -19,6 +19,8 @@
                         <p>用户名: {{ userInfo.userName }}</p>
                         <p>学号: {{ userInfo.userId }}</p>
                         <p>角色：{{ userInfo.role }}</p>
+                        <p>宿舍：{{ userInfo.roomId || '未加入宿舍' }}</p>
+                        <button class="primary" v-if="userInfo.roomId" @click="addRoom">加入宿舍</button>
                         <button @click="logout">退出登录</button>
                     </div>
                 </transition>
@@ -28,37 +30,27 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref } from 'vue';
-import { jwtDecode } from 'jwt-decode'; // 引入 jwt-decode 库用于解析 JWT
+import { defineProps, ref, defineEmits } from 'vue';
+
 import router from '../router';
 
-const accessToken = localStorage.getItem("access_token"); // 从后端获取的 JWT
+const emit = defineEmits(['showForm']);
+const props = defineProps({
+    userInfo: {
+        type: Object
+    },
+});
 
 // 控制个人信息弹出框的显示状态
 const showProfileBox = ref(false);
-const userInfo = ref({
-    userName: '未知用户',
-    userId: '未知学号',
-    role: '学生',
-});
 
-try {
-    const decoded = jwtDecode(accessToken);
-    console.log('解析后的 JWT:', decoded);
-    userInfo.value.userName = decoded.userName || '未知用户';
-    userInfo.value.userId = decoded.userId || '未知学号';
-    userInfo.value.role = decoded.role === 'student' ? '学生' : "管理员";
-} catch (error) {
-    console.error('JWT 解析失败:', error);
-}
 
-// 接收标题作为属性
-defineProps({
-    title: {
-        type: String,
-        default: '导航栏', // 默认标题
-    },
-});
+const addRoom = () => {
+    // 处理加入宿舍的逻辑
+    console.log('加入宿舍:', userInfo.value.roomId);
+    emit('showForm', 'addDorm', true);
+    // 这里可以添加实际的加入宿舍逻辑
+};
 
 const logout = () => {
     localStorage.removeItem("access_token"); // 清除 JWT
@@ -203,10 +195,21 @@ const logout = () => {
             font-size: 14px;
             width: 100%;
             text-align: center;
+            margin-top: 10px;
+            transition: background 0.3s ease;
 
             &:hover {
                 background: #d9363e;
             }
+
+            &.primary {
+                background: #1890ff;
+            }
+
+            &.primary:hover {
+                background: #40a9ff;
+            }
+
         }
     }
 }

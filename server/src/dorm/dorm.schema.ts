@@ -69,6 +69,9 @@ export class Notice {
   // 发布人ID
   @Prop({ required: true })
   releaseId: string;
+  // 发布人姓名
+  @Prop({ required: true })
+  releaseName: string;
   // 类型
   @Prop({ required: true })
   type: string;

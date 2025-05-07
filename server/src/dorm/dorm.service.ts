@@ -186,10 +186,11 @@ export class DormService {
   async notifyMembers(
     buildingId: string,
     releaseId: string,
+    releaseName: string,
     type: string,
     status: string,
     userList: string[],
-    readlist: string[],
+    readList: string[],
     title: string,
     content: string,
     noticeId?: string,
@@ -202,10 +203,11 @@ export class DormService {
           {
             buildingId,
             releaseId,
+            releaseName,
             type,
             status,
             userList,
-            readlist,
+            readList,
             title,
             content,
           },
@@ -226,7 +228,7 @@ export class DormService {
           type,
           status,
           userList,
-          readlist,
+          readList,
           title,
           content,
         });
@@ -239,6 +241,24 @@ export class DormService {
       }
     } catch (error) {
       throw new Error(`通知成员失败: ${error.message}`);
+    }
+  }
+
+  // 某个成员的所有通知
+  async getMemberNotices(userId: string): Promise<any[]> {
+    try {
+      // 查询该成员的所有通知
+      const notices = await this.noticeModel
+        .find({ userList: { $elemMatch: { userId } } })
+        .select(
+          'noticeId buildingId releaseId  title type status content createdTime',
+        )
+        .lean()
+        .exec();
+      console.log('notices', notices);
+      return notices;
+    } catch (error) {
+      throw new Error(`查询成员通知失败: ${error.message}`);
     }
   }
 }
