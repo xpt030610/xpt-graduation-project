@@ -247,6 +247,13 @@ for (let i = 0; i < 1000; i++) {
     password: generateRandomPassword(),
     role: "student",
   });
+  // 管理员账号
+  if (i === 0) {
+    users[0].userId = "3121005314"; // 管理员学号
+    users[0].userName = "肖鹏天"; // 管理员姓名
+    users[0].password = "123456"; // 管理员密码
+    users[0].role = "admin"; // 管理员角色
+  }
 }
 
 db.Users.insertMany(users);

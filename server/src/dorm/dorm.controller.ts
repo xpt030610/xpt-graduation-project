@@ -11,6 +11,26 @@ import { DormService } from './dorm.service';
 @Controller('dorm')
 export class DormController {
   constructor(private readonly dormService: DormService) {}
+  // 查询所有宿舍楼
+  @Get('getAllBuildings')
+  async getAllBuildings() {
+    try {
+      const buildings = await this.dormService.getAllBuildings();
+      return {
+        success: true,
+        message: '查询成功',
+        data: buildings,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
   // 查询某宿舍楼空余宿舍
   @Get('findAvailableRooms')
   async searchAvailableRooms(@Body() searchDto: { buildingId: string }) {
@@ -42,6 +62,7 @@ export class DormController {
         joinDto.roomId,
         joinDto.userId,
       );
+      console.log('updatedRoom', updatedRoom);
       return {
         success: true,
         message: '成功加入宿舍',

@@ -83,6 +83,7 @@ import { ref, defineProps, defineEmits } from 'vue';
 import Axios from '../utils/axios';
 import { CloseIcon } from 'tdesign-icons-vue-next';
 import { jwtDecode } from 'jwt-decode';
+import { MessagePlugin } from 'tdesign-vue-next';
 
 const emit = defineEmits(['close']);
 

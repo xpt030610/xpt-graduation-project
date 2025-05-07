@@ -9,7 +9,7 @@
                 <div class="form-group">
                     <div class="label">选择宿舍楼</div>
                     <t-select id="buildingSelect" v-model="selectedBuilding" placeholder="请选择宿舍楼"
-                        :options="buildingOptions" />
+                        :options="buildingOptions" @change="changeBuilding" />
                 </div>
 
                 <!-- 宿舍层选择 -->
@@ -24,41 +24,63 @@
                     <div class="label">选择宿舍</div>
                     <t-select id="roomSelect" v-model="selectedRoom" placeholder="请选择宿舍" :options="roomOptions" />
                 </div>
+
+                <div class="form-actions">
+                    <button theme="primary" @click="handleSubmit">申请加入</button>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, defineEmits } from 'vue';
+import { ref, defineEmits, defineProps, onMounted } from 'vue';
 import Axios from '../utils/axios';
 import { CloseIcon } from 'tdesign-icons-vue-next';
-
+import { MessagePlugin } from 'tdesign-vue-next';
+import router from '../router';
 const emit = defineEmits(['showForm']);
+
+const props = defineProps({
+    userInfo: {
+        type: Object
+    },
+});
 
 // 表单数据
 const selectedBuilding = ref(''); // 选择的宿舍楼
-const selectedFloor = ref(); // 选择的楼层
+const selectedFloor = ref(''); // 选择的楼层
 const selectedRoom = ref(''); // 选择的宿舍
-const roomOptions = ref([]); // 宿舍选项
 
-// 宿舍楼选项
-// TODO: 动态获取宿舍楼数据
-const buildingOptions = [
-    { label: '宿舍楼A', value: 'A' },
-    { label: '宿舍楼B', value: 'B' },
-    { label: '宿舍楼C', value: 'C' },
-];
+const buildingOptions = ref([])
+const floorOptions = ref([])
+const roomOptions = ref([]);
 
-// 楼层选项
-// TODO: 动态获取楼层数据
-const floorOptions = [
-    { label: '一楼', value: 1 },
-    { label: '二楼', value: 2 },
-    { label: '三楼', value: 3 },
-    { label: '四楼', value: 4 },
-    { label: '五楼', value: 5 },
-];
+// 获取宿舍楼数据
+const fetchBuildings = async () => {
+    const response = await Axios.get('/dorm/getAllBuildings');
+    const data = response.data;
+    console.log('获取宿舍楼:', data, response);
+    buildingOptions.value = data.map((building, index) => ({
+        label: building.name,
+        value: building.name,
+        floors: building.floors,
+    }));
+};
+
+// 选择宿舍楼
+const changeBuilding = () => {
+    selectedFloor.value = ''; // 重置楼层选择
+    selectedRoom.value = ''; // 重置宿舍选择
+    console.log('selectedBuilding:', selectedBuilding.value);
+    const building = buildingOptions.value.find((b) => b.value === selectedBuilding.value);
+    if (building) {
+        floorOptions.value.length = 0; // 清空楼层选项
+        for (let i = 1; i <= building.floors; i++) {
+            floorOptions.value.push({ label: `${i}楼`, value: i });
+        }
+    }
+};
 
 // 获取宿舍列表
 const fetchRooms = async () => {
@@ -70,8 +92,9 @@ const fetchRooms = async () => {
     });
     const data = response.data;
     console.log('获取宿舍:', data, response);
+    // 显示剩余床位的人数
     roomOptions.value = data.roomDetails.map((room) => ({
-        label: `${room.roomId}(${room.members.length}人)`,
+        label: `${room.roomId} (剩${5 - room.members.length}位)`,
         value: room.roomId,
     }));
 };
@@ -80,6 +103,35 @@ const fetchRooms = async () => {
 const handleCancel = () => {
     emit('showForm', 'addDorm', false); // 关闭表单
 };
+
+const handleSubmit = async () => {
+    if (!selectedRoom.value) {
+        MessagePlugin.error('请选择宿舍');
+        return;
+    }
+    console.log('申请加入宿舍:', selectedRoom.value);
+    try {
+        const response = await Axios.post('/dorm/join', {
+            roomId: selectedRoom.value,
+            userId: props.userInfo.userId,
+        });
+        const data = response.data;
+        console.log('申请加入宿舍:', data, response);
+        MessagePlugin.success(`成功进入${selectedRoom.value}宿舍，请重新登录`);
+        localStorage.removeItem("access_token"); // 清除 JWT
+        emit('showForm', 'addDorm', false); // 关闭表单
+        router.push('/login'); // 跳转到登录页面
+    } catch (error) {
+        console.error('申请加入宿舍失败:', error);
+        MessagePlugin.error('申请加入宿舍失败，请稍后重试！');
+        return;
+    }
+};
+
+onMounted(() => {
+    // 获得宿舍楼数据
+    fetchBuildings();
+})
 </script>
 
 <style scoped lang="less">
@@ -136,6 +188,25 @@ const handleCancel = () => {
         font-weight: bold;
         margin-bottom: 8px;
         display: block;
+    }
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+
+    button {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        font-weight: bold;
+        color: white;
+        background: linear-gradient(90deg, #007aff, #0051ff);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.2s ease;
     }
 }
 </style>

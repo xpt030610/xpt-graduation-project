@@ -35,6 +35,8 @@ router.beforeEach((to, from, next) => {
     next({ path: "/login" });
   } else {
     // 否则允许进入目标路由
+    console.log("Navigating to:", to.name);
+    console.log("From:", from.name);
     next();
   }
 });

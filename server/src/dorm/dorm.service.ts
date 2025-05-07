@@ -1,20 +1,35 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Room, Bed, Notice } from './dorm.schema';
+import { Room, Bed, Notice, Building } from './dorm.schema';
 import { User } from '@users/users.schema';
 
 @Injectable()
 export class DormService {
   constructor(
     @InjectModel(Room.name) private readonly roomModel: Model<Room>,
+    @InjectModel(Building.name) private readonly buildingModel: Model<Building>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(Bed.name) private readonly bedModel: Model<Bed>,
     @InjectModel(Notice.name) private readonly noticeModel: Model<Bed>,
   ) {}
 
+  // 查询所有宿舍楼
+  async getAllBuildings(): Promise<any[]> {
+    try {
+      const buildings = await this.buildingModel
+        .find({}, { name: 1, floors: 1, _id: 0 })
+        .lean()
+        .exec();
+      console.log('buildings', buildings);
+      return buildings;
+    } catch (error) {
+      throw new Error(`查询宿舍楼失败: ${error.message}`);
+    }
+  }
   // 查询某宿舍楼的空余宿舍
   async findAvailableRooms(buildingId: string): Promise<any[]> {
+    console.log('buildingId', buildingId);
     try {
       // 查询该宿舍楼的所有房间
       const rooms = await this.roomModel
@@ -23,7 +38,7 @@ export class DormService {
         .lean()
         .exec();
 
-      // 2. 查询每个房间的已入住床位数
+      // 查询每个房间的已入住床位数
       const roomAvailability = await Promise.all(
         rooms.map(async (room) => {
           // 查询计算空余床位数
@@ -37,7 +52,7 @@ export class DormService {
         }),
       );
 
-      // 3. 过滤出有空余床位的房间
+      // 过滤出有空余床位的房间
       return roomAvailability.filter((room) => room.availableBeds > 0);
     } catch (error) {
       throw new Error(`查询空余宿舍失败: ${error.message}`);
@@ -64,28 +79,29 @@ export class DormService {
     // 查找宿舍的空余床位
     const availableBed = await this.bedModel
       .findOne({ roomId, isOccupied: false })
-      .sort({ bedNum: 1 }) // 按床号升序分配
+      .sort({ bedId: 1 }) // 按床号升序分配
       .exec();
     if (!availableBed) {
       throw new Error('该宿舍床位已满');
     }
+    console.log('availableBed', availableBed, user, room);
     // 分配床位
     availableBed.isOccupied = true;
     await availableBed.save();
 
     // 更新用户的房间ID和床位ID
-    await this.userModel.findByIdAndUpdate(
+    const newUser = await this.userModel.findByIdAndUpdate(
       user._id,
       { roomId, bedId: availableBed._id, updatedAt: new Date() },
       { new: true },
     );
-
+    console.log('newUser', newUser, room);
     return {
       roomId: room.roomId,
       buildingId: room.buildingId,
       floor: room.floor,
       bedCount: room.bedCount,
-      bedNum: availableBed.bedNum,
+      bedId: availableBed.bedId,
     };
   }
 

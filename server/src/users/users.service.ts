@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './users.schema';
-import * as bcrypt from 'bcryptjs';
+// import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 @Injectable()
 export class UsersService {
@@ -27,9 +27,9 @@ export class UsersService {
       throw new UnauthorizedException('用户已注册');
     }
     // 密码加密
-    if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 10);
-    }
+    // if (userData.password) {
+    //   userData.password = await bcrypt.hash(userData.password, 10);
+    // }
     const createdUser = new this.userModel(userData);
     return createdUser.save();
   }
@@ -68,7 +68,7 @@ export class UsersService {
       };
     }
     // 验证密码
-    const isValid = await bcrypt.compare(password, user.password);
+    const isValid = password === user.password;
     if (!isValid) {
       throw new UnauthorizedException('密码错误');
     }

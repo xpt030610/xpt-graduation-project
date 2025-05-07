@@ -14,7 +14,7 @@ export class Bed {
 
   // 床号
   @Prop({ required: true })
-  bedNum: number;
+  bedId: number;
 
   // 是否有人住
   @Prop({ required: true, default: false })
@@ -48,6 +48,7 @@ export class Room {
   @Prop({ required: true })
   updatedAt: Date;
 }
+
 @Schema({ collection: 'Building', timestamps: true })
 export class Building {
   // 楼名

@@ -4,7 +4,7 @@
         <Navbar :userInfo="userInfo" @showForm="handleShowForm" />
         <!-- 容器组件 -->
         <container />
-        <add-dorm-form v-if="showAddDormForm" @showForm="handleShowForm" />
+        <add-dorm-form v-if="showAddDormForm" :userInfo="userInfo" @showForm="handleShowForm" />
     </div>
 </template>
 
@@ -29,7 +29,7 @@ try {
     console.log('解析后的 JWT:', decoded);
     userInfo.value.userName = decoded.userName || '未知用户';
     userInfo.value.userId = decoded.userId || '未知学号';
-    userInfo.value.roomId = decoded.roomId || '未加入宿舍';
+    userInfo.value.roomId = decoded.roomId || '';
     userInfo.value.role = decoded.role === 'student' ? '学生' : "管理员";
 } catch (error) {
     console.error('JWT 解析失败:', error);

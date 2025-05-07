@@ -20,7 +20,7 @@
                         <p>学号: {{ userInfo.userId }}</p>
                         <p>角色：{{ userInfo.role }}</p>
                         <p>宿舍：{{ userInfo.roomId || '未加入宿舍' }}</p>
-                        <button class="primary" v-if="userInfo.roomId" @click="addRoom">加入宿舍</button>
+                        <button class="primary" v-if="!userInfo.roomId" @click="addRoom">加入宿舍</button>
                         <button @click="logout">退出登录</button>
                     </div>
                 </transition>
@@ -43,11 +43,10 @@ const props = defineProps({
 
 // 控制个人信息弹出框的显示状态
 const showProfileBox = ref(false);
-
-
+console.log('userInfo:', props.userInfo);
 const addRoom = () => {
     // 处理加入宿舍的逻辑
-    console.log('加入宿舍:', userInfo.value.roomId);
+    console.log('加入宿舍:', props.userInfo);
     emit('showForm', 'addDorm', true);
     // 这里可以添加实际的加入宿舍逻辑
 };
