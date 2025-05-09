@@ -3,16 +3,27 @@
     <div v-if="hoveredInfo.visible" class="info-box" :style="{ top: hoveredInfo.y + 'px', left: hoveredInfo.x + 'px' }"
         @mouseenter="isHoveringInfoBox = true" @mouseleave="isHoveringInfoBox = false">
         <h3>{{ hoveredInfo.name }}</h3>
-        <button @click="handleAction('notice')">发送通知</button>
-        <button @click="handleAction('delete')">删除</button>
     </div>
+    <div v-if="dormInfo.visible" class="dorm-box" :style="{ top: dormInfo.y + 'px', left: dormInfo.x + 'px' }">
+        <h3>{{ dormInfo.name }}</h3>
+        <div class="floor-buttons">
+            <button class="btn" v-for="floor in dormInfo.floors" :key="floor"
+                :class="{ active: dormInfo.selectedFloor === floor }" @click="selectFloor(floor)">
+                {{ floor }} 楼
+            </button>
+            <button class="btn primary" @click="handleAction('notice')">发送通知</button>
+        </div>
+    </div>
+    <floorPlan v-if="floorInfo.visible" :floorInfo="floorInfo" @close="floorInfo.visible = false" />
     <NoticeForm v-if="isShowNoticeForm" :buildingId="hoveredInfo.name || '西一'" @close="isShowNoticeForm = false" />
+    <button class="btn" @click="focusOnTopView">宿舍楼俯视图</button>
 </template>
 
 <script setup>
 import * as THREE from 'three';
 import { onUnmounted, onMounted, ref } from 'vue';
 import NoticeForm from './noticeForm.vue';
+import floorPlan from './floorPlan.vue';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import gsap from 'gsap';
@@ -20,10 +31,10 @@ import throttle from 'lodash/throttle';
 
 const threeContainer = ref(null);
 const buildingRefs = ref({}); // 保存模型的引用
-const camera = ref(null); // 相机引用
 const raycaster = new THREE.Raycaster(); // 用于检测鼠标点击的对象
 const mouse = new THREE.Vector2(); // 保存鼠标位置
-let controls; // 定义 OrbitControls 的引用
+let camera; // 相机引用
+let controls;
 let hoveredObject = null; // 当前悬停的对象
 let selectedObject = null; // 当前选中的对象
 
@@ -34,6 +45,29 @@ const hoveredInfo = ref({
     y: 0,
     name: '',
 });
+
+// 宿舍框
+const dormInfo = ref({
+    visible: false,
+    x: 0,
+    y: 0,
+    name: '',
+    floors: [1, 2, 3, 4, 5], // 默认五层楼
+    selectedFloor: 5, // 默认显示五楼
+});
+// 楼层信息框状态
+const floorInfo = ref({
+    visible: false,
+    name: '',
+});
+
+
+
+const openFloorPlan = () => {
+    floorInfo.value.visible = true; // 打开 floor-plan
+};
+
+let targetObject = null; // 当前选中的对象
 const isHoveringInfoBox = ref(false); // 标记鼠标是否悬停在 info-box 上
 const isShowNoticeForm = ref(false); // 是否显示通知表单
 
@@ -77,17 +111,27 @@ const handleAction = (action) => {
     console.log(`执行操作: ${action}`);
 };
 
+const selectFloor = (floor) => {
+    dormInfo.value.selectedFloor = floor;
+    floorInfo.value.visible = true; // 显示宿舍信息框
+    console.log(`选择了第 ${floor} 楼`);
+    // 可以在这里添加逻辑，比如根据楼层加载不同的数据
+};
 // 让相机对准目标模型
 const focusOnModel = (modelName) => {
     console.log("buildingRefs.value", buildingRefs.value);
     const target = buildingRefs.value[modelName];
     if (target) {
+        targetObject = target;
+
         const boundingBox = new THREE.Box3().setFromObject(target);
         const center = boundingBox.getCenter(new THREE.Vector3());
         const size = boundingBox.getSize(new THREE.Vector3());
-        const distance = 8
+        const distance = 5
+        controls.enableDamping = false;
+
         // 使用 gsap 平滑移动相机位置
-        gsap.to(camera.value.position, {
+        gsap.to(camera.position, {
             x: center.x + distance,
             y: center.y + distance,
             z: center.z + distance,
@@ -102,14 +146,22 @@ const focusOnModel = (modelName) => {
         // 使用 gsap 平滑移动 OrbitControls 的目标点
         gsap.to(controls.target, {
             x: center.x,
-            y: center.y,
+            y: 0,
             z: center.z,
             duration: 1, // 动画持续时间（秒）
             ease: 'power2.out',
             onUpdate: () => {
-                controls.update(); // 实时更新 OrbitControls
+                controls.update();
             },
         });
+
+        // // 将 3D 坐标转换为屏幕坐标
+        // const vector = center.clone().project(camera);
+        // const screenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
+        // const screenY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+
+        // 显示信息框
+        dormInfo.value.visible = true;
 
         console.log(`相机对准模型: ${modelName}`, { center, size });
     } else {
@@ -117,105 +169,32 @@ const focusOnModel = (modelName) => {
     }
 };
 
-const splitBuildingIntoLayers = (building, segments = 5) => {
-    // 创建组来存放分割后的层
-    const layersGroup = new THREE.Group();
-    layersGroup.name = building.name;
+// 让视角变成俯视图
+const focusOnTopView = () => {
+    const target = new THREE.Vector3(0, 0, -5); // 目标点
+    const distance = 20; // 相机与目标点的距离
 
-    // 获取建筑的世界坐标系包围盒
-    building.updateMatrixWorld(true);
-    const boundingBox = new THREE.Box3().setFromObject(building).clone()
-
-    const inverseMatrix = new THREE.Matrix4().copy(building.matrixWorld).invert();
-    boundingBox.applyMatrix4(inverseMatrix);
-
-    const height = boundingBox.max.y - boundingBox.min.y
-    const segmentHeight = height / segments;
-    console.log('boundingBox', boundingBox, boundingBox.max.y, boundingBox.min.y, 'height', height, 'segmentHeight', segmentHeight, 'building', building);
-
-
-    // // 克隆原始几何体
-    const originalGeometry = building.geometry.clone();
-    console.log('originalGeometry', originalGeometry)
-
-    for (let i = 0; i < segments; i++) {
-        const minY = boundingBox.min.y + i * segmentHeight;
-        const maxY = boundingBox.min.y + (i + 1) * segmentHeight;
-
-        console.log(`Processing Layer ${i}: minY = ${minY}, maxY = ${maxY}`);
-
-        const layerGeometry = new THREE.BufferGeometry();
-        const srcPos = originalGeometry.attributes.position;
-        const srcIndex = originalGeometry.index;
-        const newPos = [];
-        const newIndices = [];
-        const vertexMap = new Map(); // 用于映射新顶点的索引
-        const positionsArray = srcPos.array;
-
-        if (srcIndex) {
-            const indicesArray = srcIndex.array;
-
-            for (let j = 0; j < indicesArray.length; j += 3) {
-                const a = indicesArray[j];
-                const b = indicesArray[j + 1];
-                const c = indicesArray[j + 2];
-
-                const ax = positionsArray[a * 3];
-                const ay = positionsArray[a * 3 + 1];
-                const az = positionsArray[a * 3 + 2];
-
-                const bx = positionsArray[b * 3];
-                const by = positionsArray[b * 3 + 1];
-                const bz = positionsArray[b * 3 + 2];
-
-                const cx = positionsArray[c * 3];
-                const cy = positionsArray[c * 3 + 1];
-                const cz = positionsArray[c * 3 + 2];
-
-                if (
-                    (ay >= minY && ay <= maxY) ||
-                    (by >= minY && by <= maxY) ||
-                    (cy >= minY && cy <= maxY)
-                ) {
-                    const addVertex = (x, y, z) => {
-                        const key = `${x},${y},${z}`;
-                        if (!vertexMap.has(key)) {
-                            vertexMap.set(key, newPos.length / 3);
-                            newPos.push(x, y - minY, z);
-                        }
-                        return vertexMap.get(key);
-                    };
-
-                    const newA = addVertex(ax, ay, az);
-                    const newB = addVertex(bx, by, bz);
-                    const newC = addVertex(cx, cy, cz);
-
-                    newIndices.push(newA, newB, newC);
-                }
-            }
-
-            layerGeometry.setAttribute(
-                'position',
-                new THREE.Float32BufferAttribute(newPos, 3)
-            );
-            layerGeometry.setIndex(newIndices);
-            layerGeometry.computeVertexNormals();
-        }
-
-        const layer = new THREE.Mesh(
-            layerGeometry,
-            building.material.clone()
-        );
-        layer.position.y = minY; // 定位到正确高度
-        layer.name = `${building.name}-layer-${i}`;
-        layersGroup.add(layer);
-    }
-    layersGroup.position.copy(building.position); // 应用位置
-    layersGroup.rotation.copy(building.rotation); // 应用旋转
-    layersGroup.scale.copy(building.scale);       // 应用缩放
-
-    return layersGroup;
-}
+    gsap.to(camera.position, {
+        x: target.x,
+        y: target.y + distance,
+        z: target.z,
+        duration: 1, // 动画持续时间（秒）
+        ease: 'power2.out', // 缓动效果
+        onUpdate: () => {
+            controls.update();
+        },
+    });
+    gsap.to(controls.target, {
+        x: target.x,
+        y: target.y,
+        z: target.z - 1,
+        duration: 1, // 动画持续时间（秒）
+        ease: 'power2.out',
+        onUpdate: () => {
+            controls.update();
+        },
+    });
+};
 
 const autoSplitBuildings = (model, segments = 5) => {
     console.log('model', model, segments);
@@ -241,7 +220,7 @@ const autoSplitBuildings = (model, segments = 5) => {
 const onMouseMove = throttle((event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera.value);
+    raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(Object.values(buildingRefs.value)); // 只检测建筑物对象
     // 有效hover
     if (intersects.length > 0) {
@@ -303,13 +282,14 @@ const onClick = () => {
         selectedObject = hoveredObject;
         selectedObject.material = selectedMaterial
         focusOnModel(selectedObject.name);
+
     }
 }
 
 onMounted(() => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x101010);
-    camera.value = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.localClippingEnabled = true;
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -344,7 +324,7 @@ onMounted(() => {
         }
     );
     // 添加 OrbitControls
-    controls = new OrbitControls(camera.value, renderer.domElement);
+    controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; // 启用阻尼效果（惯性）
     controls.dampingFactor = 0.05; // 阻尼系数
     controls.screenSpacePanning = false; // 禁止屏幕平移
@@ -354,8 +334,28 @@ onMounted(() => {
     // 动画循环
     const animate = () => {
         requestAnimationFrame(animate);
+
+        // 实时更新信息框位置
+        if (targetObject && dormInfo.value.visible) {
+            const boundingBox = new THREE.Box3().setFromObject(targetObject);
+            const center = boundingBox.getCenter(new THREE.Vector3());
+            const size = boundingBox.getSize(new THREE.Vector3()); // 获取建筑物的尺寸
+
+            // 将 3D 坐标转换为屏幕坐标
+            const vector = center.clone().project(camera);
+            const screenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const screenY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+
+            const offsetX = 300;
+            const offsetY = 0;
+
+            // 更新信息框位置
+            dormInfo.value.x = screenX + offsetX;
+            dormInfo.value.y = screenY + offsetY;
+        }
+
         controls.update();
-        renderer.render(scene, camera.value);
+        renderer.render(scene, camera);
     };
     animate();
 
@@ -365,8 +365,8 @@ onMounted(() => {
 
     // 窗口大小调整事件
     window.addEventListener('resize', () => {
-        camera.value.aspect = window.innerWidth / window.innerHeight;
-        camera.value.updateProjectionMatrix();
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
@@ -379,14 +379,16 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="less">
 .three-container {
     width: 100%;
     height: 100vh;
     overflow: hidden;
 }
 
-.info-box {
+.info-box,
+.dorm-box {
+    flex-direction: column;
     position: absolute;
     background: rgba(0, 0, 0, 0.8);
     color: white;
@@ -394,26 +396,182 @@ onUnmounted(() => {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     font-size: 14px;
-    z-index: 1000;
+    z-index: 9;
+
+    h3 {
+        margin: 0 0 10px;
+        font-size: 16px;
+    }
+
+    .btn {
+        position: relative;
+        top: 0;
+        left: 0;
+        color: #fff;
+        padding: 6px 12px;
+    }
+
+    .floor-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+
+        .btn {
+            background: #fff;
+            color: #333;
+            font-size: 16px;
+            padding: 6px 24px;
+
+            &.primary {
+                background: #007bff;
+                color: #fff;
+                border: none;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+        }
+    }
 }
 
-.info-box h3 {
-    margin: 0 0 10px;
-    font-size: 16px;
+.dorm-box {
+    display: flex;
+    background: transparent;
+    box-shadow: none;
 }
 
-.info-box button {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
+.btn {
+    position: absolute;
+    top: 80px;
+    left: 10px;
+    background: #ffffff;
+    font-weight: 700;
+    color: #333;
+    border: 1px solid #333;
+    padding: 12px 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
     cursor: pointer;
-    margin-right: 5px;
-    font-size: 12px;
+    transition: all 0.3s ease;
+    z-index: 9;
+
+    &:hover {
+        background: #f0f0f0;
+        color: #000;
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+        transform: translateY(-2px);
+    }
+
+    &:active {
+        background: #e6e6e6;
+        color: #000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+        transform: translateY(1px);
+    }
 }
 
-.info-box button:hover {
-    background: #0056b3;
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); // 半透明黑色遮罩
+    z-index: 1000; // 确保遮罩层在最上方
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .floor-plan {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%); // 居中显示
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 1000px; // 楼层图宽度
+        height: 400px; // 楼层图高度
+        background: #f9f9f9; // 楼层背景色
+        border: 2px solid #000; // 楼层边框
+        border-radius: 8px; // 圆角
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); // 阴影效果
+        padding: 10px 100px;
+        z-index: 10;
+
+        .hallway {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); // 居中显示
+            width: calc(100% - 200px);
+            height: 50px; // 走廊宽度
+            background: #e0e0e0; // 走廊背景色
+            border: 2px dashed #000; // 虚线边框
+            z-index: 1;
+        }
+
+        .top,
+        .bottom {
+            position: absolute;
+            display: flex;
+            gap: 10px;
+            width: calc(100% - 200px); // 房间宽度
+            justify-content: space-between;
+        }
+
+        .top {
+            top: 10px; // 靠左侧
+        }
+
+        .bottom {
+            bottom: 10px; // 靠右侧
+        }
+
+        .room {
+            width: 80px; // 房间宽度
+            height: 120px; // 房间高度
+            background: #fff; // 房间背景色
+            border: 2px solid #000; // 房间黑框
+            display: flex;
+            justify-content: center; // 房间号居中
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px; // 房间圆角
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // 房间阴影
+
+            &:hover {
+                background: #f0f0f0; // 悬停时背景色
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); // 悬停时阴影
+            }
+        }
+
+        .stair {
+            position: absolute;
+            width: 50px; // 楼梯宽度
+            height: 200px; // 楼梯高度
+            background: #dcdcdc; // 楼梯背景色
+            border: 2px solid #000; // 楼梯边框
+            display: flex;
+            justify-content: center; // 楼梯文字居中
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px; // 楼梯圆角
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // 楼梯阴影
+        }
+
+        .left-stair {
+            top: 50%;
+            left: 10px; // 靠左侧，距离楼层图 120px
+            transform: translateY(-50%);
+        }
+
+        .right-stair {
+            top: 50%;
+            right: 10px; // 靠右侧，距离楼层图 120px
+            transform: translateY(-50%);
+        }
+    }
 }
 </style>

@@ -275,6 +275,7 @@ const handleCancel = () => {
 
 .form-left,
 .form-right {
+    max-width: 50%;
     flex: 1;
 }
 
@@ -290,7 +291,8 @@ const handleCancel = () => {
 
     .student-list {
         display: flex;
-        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
 
         .student-tag {
             margin-right: 5px;

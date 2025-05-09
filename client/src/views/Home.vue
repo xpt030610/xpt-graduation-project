@@ -3,7 +3,7 @@
         <!-- 导航栏 -->
         <Navbar :userInfo="userInfo" @showForm="handleShowForm" />
         <!-- 容器组件 -->
-        <container />
+        <container class="container" />
         <add-dorm-form v-if="showAddDormForm" :userInfo="userInfo" @showForm="handleShowForm" />
     </div>
 </template>
@@ -48,5 +48,9 @@ const handleShowForm = (type, value) => {
 <style scoped>
 .home {
     background: linear-gradient(135deg, #1e1e2f, #121212);
+}
+
+.container {
+    overflow: hidden;
 }
 </style>
