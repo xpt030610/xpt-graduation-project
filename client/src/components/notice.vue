@@ -29,6 +29,8 @@
                         </td>
                         <td>
                             <button class="detail-button" @click="viewDetails(notice)">查看详情</button>
+                            <!-- 管理员可以编辑 -->
+                            <button v-if="isAdmin" class="edit-button" @click="changeDetail(notice)">编辑</button>
                         </td>
                     </tr>
                 </tbody>
@@ -36,23 +38,33 @@
             <!-- 详细通知弹窗 -->
             <div v-if="selectedNotice" class="notice-detail-modal">
                 <div class="modal-content">
-                    <h3>{{ selectedNotice.title }}</h3>
+                    <h3 v-if="!isChange">{{ selectedNotice.title }}</h3>
+                    <div v-else class="edit-title">
+                        <strong>修改标题: </strong>
+                        <t-input v-model="selectedNotice.title" placeholder="请输入标题" />
+                    </div>
                     <p><strong>发布人:</strong> {{ selectedNotice.releaseName }}</p>
+                    <p><strong>状态:</strong> {{ getStatus(selectedNotice.status) }}</p>
                     <p><strong>宿舍楼:</strong> {{ selectedNotice.buildingId }}</p>
                     <p><strong>时间:</strong> {{ formatTime(selectedNotice.createdTime) }}</p>
                     <p><strong>类型:</strong> {{ getTypeLabel(selectedNotice.type) }}</p>
                     <p><strong>内容:</strong></p>
-                    <p>{{ selectedNotice.content }}</p>
+                    <p v-if="!isChange">{{ selectedNotice.content }}</p>
+                    <t-input v-else v-model="selectedNotice.content" placeholder="请输入内容" />
                     <CloseIcon class="close-button" @click="selectedNotice = null" />
                 </div>
+                <button v-if="isChange" class="edit-button" @click="changeDetail(selectedNotice)">保存修改</button>
             </div>
         </div>
     </transition>
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref } from 'vue';
+import { defineProps, defineEmits, ref, computed } from 'vue';
 import { CloseIcon } from 'tdesign-icons-vue-next';
+import { useUserStore } from '../stores';
+const Store = useUserStore();
+const isAdmin = computed(() => Store.isAdmin);
 
 const props = defineProps({
     noticeList: {
@@ -62,8 +74,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close']);
-
-const selectedNotice = ref(null); // 当前选中的通知详情
 
 const closeTable = () => {
     emit('showForm', 'notice', false);
@@ -85,8 +95,30 @@ const getTypeLabel = (type) => {
     }
 };
 
+const getStatus = (status) => {
+    switch (status) {
+        case 'published':
+            return '已发布';
+        case 'changed':
+            return '已修改';
+        case 'canceled':
+            return '已删除';
+        default:
+            return '未知状态';
+    }
+};
+
+const isChange = ref(false);
+const selectedNotice = ref(null); // 当前选中的通知详情
 const viewDetails = (notice) => {
-    selectedNotice.value = notice; // 设置当前选中的通知
+    isChange.value = false;
+    selectedNotice.value = JSON.parse(JSON.stringify(notice));
+
+};
+
+const changeDetail = (notice) => {
+    isChange.value = true;
+    selectedNotice.value = JSON.parse(JSON.stringify(notice));
 };
 </script>
 
@@ -165,7 +197,8 @@ const viewDetails = (notice) => {
         }
     }
 
-    .detail-button {
+    .detail-button,
+    .edit-button {
         background: #1890ff;
         color: white;
         border: none;
@@ -176,6 +209,15 @@ const viewDetails = (notice) => {
 
         &:hover {
             background: #40a9ff;
+        }
+    }
+
+    .edit-button {
+        background: #52c41a;
+        margin-left: 10px;
+
+        &:hover {
+            background: #73d13d;
         }
     }
 }
@@ -195,12 +237,25 @@ const viewDetails = (notice) => {
     padding: 20px;
 
     .modal-content {
+        margin-top: 25px;
+
         h3 {
             margin-top: 0;
         }
 
         p {
             margin: 10px 0;
+        }
+
+        .edit-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+
+            strong {
+                flex-shrink: 0;
+                margin-right: 10px;
+            }
         }
 
         .close-button {
@@ -211,6 +266,11 @@ const viewDetails = (notice) => {
             font-size: 24px;
             color: #333;
         }
+    }
+
+    .edit-button {
+        margin-left: 0;
+        margin-top: 20px;
     }
 }
 </style>

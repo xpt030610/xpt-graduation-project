@@ -34,18 +34,17 @@
 </template>
 
 <script setup>
-import { ref, defineEmits, defineProps, onMounted } from 'vue';
+import { ref, defineEmits, onMounted, computed } from 'vue';
 import Axios from '../utils/axios';
 import { CloseIcon } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import router from '../router';
-const emit = defineEmits(['showForm']);
+import { useUserStore } from '../stores';
+const Store = useUserStore();
 
-const props = defineProps({
-    userInfo: {
-        type: Object
-    },
-});
+const userInfo = computed(() => Store.userInfo);
+
+const emit = defineEmits(['showForm']);
 
 // 表单数据
 const selectedBuilding = ref(''); // 选择的宿舍楼
@@ -113,7 +112,7 @@ const handleSubmit = async () => {
     try {
         const response = await Axios.post('/dorm/join', {
             roomId: selectedRoom.value,
-            userId: props.userInfo.userId,
+            userId: userInfo.userId,
         });
         const data = response.data;
         console.log('申请加入宿舍:', data, response);

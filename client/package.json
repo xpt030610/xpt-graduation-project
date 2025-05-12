@@ -13,6 +13,7 @@
     "gsap": "^3.12.7",
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
+    "pinia": "^3.0.2",
     "tdesign-icons-vue-next": "^0.3.6",
     "tdesign-vue-next": "^1.11.5",
     "three": "^0.174.0",

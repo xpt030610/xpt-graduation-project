@@ -17,15 +17,14 @@
         </div>
         <floorPlan v-if="isShowFloorPlan" :floorInfo="dormInfo" :buildingId="selectedObject.name.split('-')[1]"
             @close="isShowFloorPlan = false" />
-        <NoticeForm v-if="isShowNoticeForm" :buildingId="hoveredInfo.name || '西一'" @close="isShowNoticeForm = false"
-            :userInfo="props.userInfo" />
+        <NoticeForm v-if="isShowNoticeForm" :buildingId="hoveredInfo.name || '西一'" @close="isShowNoticeForm = false" />
         <button class="btn" @click="focusOnTopView">宿舍楼俯视图</button>
     </div>
 </template>
 
 <script setup>
 import * as THREE from 'three';
-import { onUnmounted, onMounted, ref, defineProps, computed } from 'vue';
+import { onUnmounted, onMounted, ref, computed } from 'vue';
 import NoticeForm from './noticeForm.vue';
 import floorPlan from './floorPlan.vue';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -33,17 +32,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import gsap from 'gsap';
 import throttle from 'lodash/throttle';
 import Axios from '../utils/axios';
-
-const props = defineProps({
-    userInfo: {
-        type: Object
-    },
-});
+import { useUserStore } from '../stores';
+const Store = useUserStore();
 
 // 管理员
-const isAdmin = computed(() => {
-    return props.userInfo.role === '管理员'
-})
+const isAdmin = computed(() => Store.isAdmin);
 
 // 缓存悬停材质
 const hoverMaterial = new THREE.MeshPhysicalMaterial({
@@ -308,8 +301,6 @@ const onClick = () => {
 }
 
 onMounted(() => {
-    isAdmin.value = props.userInfo.role === 'admin'; // 是否是管理员
-    console.log("isAdmin", props.userInfo, isAdmin.value)
     // 获取宿舍楼数据
     fetchBuildings();
     const scene = new THREE.Scene();

@@ -15,7 +15,7 @@
                     <div v-if="showNotificationBox" class="notification-box">
                         <p v-if="props.noticeList.length === 0">暂无消息</p>
                         <ul>
-                            <li v-for="(notice) in props.noticeList.slice(0, 5)" :key="notice.noticeId" :class="{
+                            <li v-for="(notice) in props.noticeList.slice(0, 3)" :key="notice.noticeId" :class="{
                                 urgent: notice.type === 'urgent',
                                 important: notice.type === 'important',
                                 normal: notice.type !== 'urgent' && notice.type !== 'important'
@@ -57,14 +57,14 @@
 </template>
 
 <script setup>
-import { defineProps, ref, defineEmits } from 'vue';
+import { defineProps, ref, defineEmits, computed } from 'vue';
 import router from '../router';
+import { useUserStore } from '../stores';
+const Store = useUserStore();
+const userInfo = computed(() => Store.userInfo);
 
 const emit = defineEmits(['showForm']);
 const props = defineProps({
-    userInfo: {
-        type: Object
-    },
     noticeList: {
         type: Array,
         default: () => []
@@ -73,10 +73,9 @@ const props = defineProps({
 
 // 控制个人信息弹出框的显示状态
 const showProfileBox = ref(false);
-console.log('userInfo:', props.userInfo);
 const addRoom = () => {
     // 处理加入宿舍的逻辑
-    console.log('加入宿舍:', props.userInfo);
+    console.log('加入宿舍:', userInfo);
     emit('showForm', 'addDorm', true);
     // 这里可以添加实际的加入宿舍逻辑
 };
@@ -273,6 +272,7 @@ const viewAllNotifications = () => {
         padding: 15px 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-top: 0;
+        z-index: 10;
 
         p {
             margin-bottom: 10px;

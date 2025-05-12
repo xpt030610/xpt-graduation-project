@@ -1,10 +1,10 @@
 <template>
     <div class="home">
         <!-- 导航栏 -->
-        <Navbar :userInfo="userInfo" :noticeList="noticeList" @showForm="handleShowForm" />
+        <Navbar :noticeList="noticeList" @showForm="handleShowForm" />
         <!-- 容器组件 -->
-        <container :userInfo="userInfo" />
-        <add-dorm-form v-if="showAddDormForm" :userInfo="userInfo" @showForm="handleShowForm" />
+        <container />
+        <add-dorm-form v-if="showAddDormForm" @showForm="handleShowForm" />
         <notice v-if="showNoticeBox" :noticeList="noticeList" @showForm="handleShowForm" />
     </div>
 </template>
@@ -19,29 +19,27 @@ import { ref, onMounted } from 'vue';
 import { jwtDecode } from 'jwt-decode';
 
 import Axios from '../utils/axios';
-
-const userInfo = ref({
-    userName: '未知用户',
-    userId: '未知学号',
-    roomId: '',
-    role: '学生',
-});
+import { useUserStore } from '../stores';
+const Store = useUserStore();
 
 const getUserInfo = () => {
+    Store.setUserInfo({}); // 初始化用户信息
     const token = localStorage.getItem("access_token");
     if (token) {
+        const userInfo = {};
         const decoded = jwtDecode(token);
-        console.log('解码后的用户信息:', decoded);
-        userInfo.value.userName = decoded.userName || '未知用户';
-        userInfo.value.userId = decoded.userId || '未知学号';
-        userInfo.value.roomId = decoded.roomId || '';
-        userInfo.value.role = decoded.role === 'student' ? '学生' : "管理员";
+        userInfo.userName = decoded.userName || '未知用户';
+        userInfo.userId = decoded.userId || '未知学号';
+        userInfo.roomId = decoded.roomId || '';
+        userInfo.role = decoded.role === 'student' ? '学生' : "管理员";
+        Store.setUserInfo(userInfo);
     }
 };
 const noticeList = ref([]); // 存储通知列表
 const getNoticeList = async () => {
+    const userInfo = Store.userInfo;
     const response = await Axios.post('/dorm/getMemberNotices', {
-        userId: userInfo.value.userId,
+        userId: userInfo.userId,
     });
     noticeList.value = response.data;
     console.log('获取通知列表:', response.data);

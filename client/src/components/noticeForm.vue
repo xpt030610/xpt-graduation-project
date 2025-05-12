@@ -79,10 +79,13 @@
     </div>
 </template>
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue';
+import { ref, defineProps, defineEmits, computed } from 'vue';
 import Axios from '../utils/axios';
 import { CloseIcon } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
+import { useUserStore } from '../stores';
+const Store = useUserStore();
+const userInfo = computed(() => Store.userInfo);
 
 const emit = defineEmits(['close']);
 
@@ -91,10 +94,7 @@ const props = defineProps({
     buildingId: {
         type: String,
         default: '西一', // 默认标题
-    },
-    userInfo: {
-        type: Object,
-    },
+    }
 });
 
 // 表单数据
@@ -135,8 +135,8 @@ const studentOptions = ref([]); // 学生选项
 const handleSubmit = async () => {
     const notice = {
         buildingId: props.buildingId,
-        releaseId: props.userInfo.userId || '未知学号',
-        releaseName: props.userInfo.userName || '未知用户',
+        releaseId: userInfo.userId || '未知学号',
+        releaseName: userInfo.userName || '未知用户',
         type: noticeType.value,
         status: 'published',
         userList: studentList.value.map((student) => ({ userId: student.userId, userName: student.userName })),
