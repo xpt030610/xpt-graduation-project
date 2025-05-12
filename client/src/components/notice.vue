@@ -47,31 +47,31 @@
                     <p><strong>状态:</strong> {{ getStatus(selectedNotice.status) }}</p>
                     <p><strong>宿舍楼:</strong> {{ selectedNotice.buildingId }}</p>
                     <p><strong>时间:</strong> {{ formatTime(selectedNotice.createdTime) }}</p>
-                    <p><strong>类型:</strong> {{ getTypeLabel(selectedNotice.type) }}</p>
+                    <p v-if="!isChange"><strong>类型:</strong> {{ getTypeLabel(selectedNotice.type) }}</p>
+                    <div v-else class="edit-title">
+                        <strong>修改类型:</strong>
+                        <t-select v-model="selectedNotice.type"
+                            :options="[{ label: '普通', value: 'normal' }, { label: '重要', value: 'important' }, { label: '紧急', value: 'urgent' }]" />
+                    </div>
                     <p><strong>内容:</strong></p>
                     <p v-if="!isChange">{{ selectedNotice.content }}</p>
                     <t-input v-else v-model="selectedNotice.content" placeholder="请输入内容" />
                     <CloseIcon class="close-button" @click="selectedNotice = null" />
                 </div>
-                <button v-if="isChange" class="edit-button" @click="changeDetail(selectedNotice)">保存修改</button>
+                <button v-if="isChange" class="edit-button" @click="changeNotice">保存修改</button>
             </div>
         </div>
     </transition>
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref, computed } from 'vue';
+import { defineEmits, ref, computed } from 'vue';
 import { CloseIcon } from 'tdesign-icons-vue-next';
-import { useUserStore } from '../stores';
-const Store = useUserStore();
+import Axios from '../utils/axios';
+import { useStore } from '../stores';
+const Store = useStore();
 const isAdmin = computed(() => Store.isAdmin);
-
-const props = defineProps({
-    noticeList: {
-        type: Array,
-        required: true,
-    },
-});
+const noticeList = computed(() => Store.noticeList);
 
 const emit = defineEmits(['close']);
 
@@ -119,6 +119,23 @@ const viewDetails = (notice) => {
 const changeDetail = (notice) => {
     isChange.value = true;
     selectedNotice.value = JSON.parse(JSON.stringify(notice));
+};
+
+const changeNotice = async () => {
+    const notice = {
+        noticeId: selectedNotice.value.noticeId,
+        status: 'changed',
+        type: selectedNotice.value.type,
+        readList: selectedNotice.value.readList,
+        title: selectedNotice.value.title,
+        content: selectedNotice.value.content,
+    }
+    const response = await Axios.post('/dorm/notifyMembers', notice);
+    const data = response.data;
+    MessagePlugin.success('通知修改成功！');
+    console.log('通知发送结果:', notice, data);
+    Store.getNoticeList()
+    selectedNotice.value = null; // 关闭详情弹窗
 };
 </script>
 

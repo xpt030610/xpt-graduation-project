@@ -59,8 +59,8 @@
 <script setup>
 import { defineProps, ref, defineEmits, computed } from 'vue';
 import router from '../router';
-import { useUserStore } from '../stores';
-const Store = useUserStore();
+import { useStore } from '../stores';
+const Store = useStore();
 const userInfo = computed(() => Store.userInfo);
 
 const emit = defineEmits(['showForm']);

@@ -32,8 +32,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import gsap from 'gsap';
 import throttle from 'lodash/throttle';
 import Axios from '../utils/axios';
-import { useUserStore } from '../stores';
-const Store = useUserStore();
+import { useStore } from '../stores';
+const Store = useStore();
 
 // 管理员
 const isAdmin = computed(() => Store.isAdmin);

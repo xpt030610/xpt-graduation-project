@@ -200,29 +200,26 @@ export class DormService {
 
   // 公告通知成员
   async notifyMembers(
-    buildingId: string,
-    releaseId: string,
-    releaseName: string,
     type: string,
     status: string,
-    userList: string[],
     readList: string[],
     title: string,
     content: string,
+    userList?: string[],
     noticeId?: string,
+    buildingId?: string,
+    releaseId?: string,
+    releaseName?: string,
   ): Promise<any> {
     try {
       if (noticeId) {
+        console.log('noticeId', noticeId);
         // 更新通知
-        await this.noticeModel.findByIdAndUpdate(
-          noticeId,
+        await this.noticeModel.findOneAndUpdate(
+          { noticeId },
           {
-            buildingId,
-            releaseId,
-            releaseName,
             type,
             status,
-            userList,
             readList,
             title,
             content,

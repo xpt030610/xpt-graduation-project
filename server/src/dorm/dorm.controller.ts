@@ -145,16 +145,16 @@ export class DormController {
   ) {
     try {
       const result = await this.dormService.notifyMembers(
-        notifyDto.buildingId,
-        notifyDto.releaseId,
-        notifyDto.releaseName,
         notifyDto.type,
         notifyDto.status,
-        notifyDto.userList,
         notifyDto.readList,
         notifyDto.title,
         notifyDto.content,
+        notifyDto.userList,
         notifyDto.noticeId,
+        notifyDto.buildingId,
+        notifyDto.releaseId,
+        notifyDto.releaseName,
       );
       return {
         success: true,

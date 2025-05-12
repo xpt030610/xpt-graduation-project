@@ -39,8 +39,8 @@ import Axios from '../utils/axios';
 import { CloseIcon } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import router from '../router';
-import { useUserStore } from '../stores';
-const Store = useUserStore();
+import { useStore } from '../stores';
+const Store = useStore();
 
 const userInfo = computed(() => Store.userInfo);
 

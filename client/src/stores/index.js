@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
-
-export const useUserStore = defineStore("user", {
+import Axios from "../utils/axios";
+export const useStore = defineStore("user", {
   state: () => ({
     isAdmin: false, // 是否是管理员
     userInfo: {}, // 用户信息
+    noticeList: [], // 通知列表
   }),
   actions: {
     setUserInfo(userInfo) {
@@ -12,20 +13,12 @@ export const useUserStore = defineStore("user", {
       console.log("pinia userInfo", this.userInfo);
       console.log("pinia isAdmin", this.isAdmin);
     },
-  },
-});
-export const useTokenStore = defineStore("token", {
-  state: () => ({
-    token: null, // token
-  }),
-  actions: {
-    setToken(token) {
-      this.token = token;
-      localStorage.setItem("access_token", token); // 将 token 存储到 localStorage
-    },
-    removeToken() {
-      this.token = null;
-      localStorage.removeItem("access_token"); // 移除 localStorage 中的 token
+    async getNoticeList() {
+      const response = await Axios.post("/dorm/getMemberNotices", {
+        userId: this.userInfo.userId,
+      });
+      this.noticeList = response.data;
+      console.log("获取通知列表:", response.data);
     },
   },
 });

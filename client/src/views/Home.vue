@@ -14,13 +14,14 @@ import Navbar from '../components/navbar.vue';
 import container from '../components/container.vue';
 import addDormForm from '../components/addDormForm.vue';
 import notice from '../components/notice.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 
 import { jwtDecode } from 'jwt-decode';
 
-import Axios from '../utils/axios';
-import { useUserStore } from '../stores';
-const Store = useUserStore();
+// import Axios from '../utils/axios';
+import { useStore } from '../stores';
+const Store = useStore();
+const noticeList = computed(() => Store.noticeList);
 
 const getUserInfo = () => {
     Store.setUserInfo({}); // 初始化用户信息
@@ -35,15 +36,15 @@ const getUserInfo = () => {
         Store.setUserInfo(userInfo);
     }
 };
-const noticeList = ref([]); // 存储通知列表
-const getNoticeList = async () => {
-    const userInfo = Store.userInfo;
-    const response = await Axios.post('/dorm/getMemberNotices', {
-        userId: userInfo.userId,
-    });
-    noticeList.value = response.data;
-    console.log('获取通知列表:', response.data);
-};
+// const noticeList = ref([]); // 存储通知列表
+// const getNoticeList = async () => {
+//     const userInfo = Store.userInfo;
+//     const response = await Axios.post('/dorm/getMemberNotices', {
+//         userId: userInfo.userId,
+//     });
+//     noticeList.value = response.data;
+//     console.log('获取通知列表:', response.data);
+// };
 
 const showAddDormForm = ref(false); // 控制添加宿舍表单的显示状态
 const handleShowForm = (type, value) => {
@@ -55,12 +56,10 @@ const handleShowForm = (type, value) => {
 };
 
 const showNoticeBox = ref(false); // 控制通知列表的显示状态
-const handleShowNotice = (value) => {
-    showNoticeBox.value = value; // 显示通知列表
-};
+
 onMounted(() => {
     getUserInfo();
-    getNoticeList();
+    Store.getNoticeList()
 });
 </script>
 
