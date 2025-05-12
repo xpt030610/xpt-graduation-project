@@ -1,75 +1,49 @@
 <template>
-    <div ref="threeContainer" class="three-container"></div>
-    <div v-if="hoveredInfo.visible" class="info-box" :style="{ top: hoveredInfo.y + 'px', left: hoveredInfo.x + 'px' }"
-        @mouseenter="isHoveringInfoBox = true" @mouseleave="isHoveringInfoBox = false">
-        <h3>{{ hoveredInfo.name }}</h3>
-    </div>
-    <div v-if="dormInfo.visible" class="dorm-box" :style="{ top: dormInfo.y + 'px', left: dormInfo.x + 'px' }">
-        <h3>{{ dormInfo.name }}</h3>
-        <div class="floor-buttons">
-            <button class="btn" v-for="floor in dormInfo.floors" :key="floor"
-                :class="{ active: dormInfo.selectedFloor === floor }" @click="selectFloor(floor)">
-                {{ floor }} 楼
-            </button>
-            <button class="btn primary" @click="handleAction('notice')">发送通知</button>
+    <div class="wrapper">
+        <div ref="threeContainer" class="three-container"></div>
+        <div v-if="hoveredInfo.visible" class="info-box"
+            :style="{ top: hoveredInfo.y + 'px', left: hoveredInfo.x + 'px' }">
+            <h3>{{ hoveredInfo.name }}</h3>
         </div>
+        <div v-if="dormInfo.visible" class="dorm-box" :style="{ top: dormInfo.y + 'px', left: dormInfo.x + 'px' }">
+            <h3>{{ dormInfo.name }}</h3>
+            <div class="floor-buttons">
+                <button class="btn" v-for="floor in dormInfo.floors" :key="floor"
+                    :class="{ active: dormInfo.selectedFloor === floor }" @click="selectFloor(floor)">
+                    {{ floor }} 楼
+                </button>
+                <button v-if="isAdmin" class="btn primary" @click="handleAction('notice')">发送通知</button>
+            </div>
+        </div>
+        <floorPlan v-if="isShowFloorPlan" :floorInfo="dormInfo" :buildingId="selectedObject.name.split('-')[1]"
+            @close="isShowFloorPlan = false" />
+        <NoticeForm v-if="isShowNoticeForm" :buildingId="hoveredInfo.name || '西一'" @close="isShowNoticeForm = false"
+            :userInfo="props.userInfo" />
+        <button class="btn" @click="focusOnTopView">宿舍楼俯视图</button>
     </div>
-    <floorPlan v-if="floorInfo.visible" :floorInfo="floorInfo" @close="floorInfo.visible = false" />
-    <NoticeForm v-if="isShowNoticeForm" :buildingId="hoveredInfo.name || '西一'" @close="isShowNoticeForm = false" />
-    <button class="btn" @click="focusOnTopView">宿舍楼俯视图</button>
 </template>
 
 <script setup>
 import * as THREE from 'three';
-import { onUnmounted, onMounted, ref } from 'vue';
+import { onUnmounted, onMounted, ref, defineProps, computed } from 'vue';
 import NoticeForm from './noticeForm.vue';
 import floorPlan from './floorPlan.vue';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import gsap from 'gsap';
 import throttle from 'lodash/throttle';
+import Axios from '../utils/axios';
 
-const threeContainer = ref(null);
-const buildingRefs = ref({}); // 保存模型的引用
-const raycaster = new THREE.Raycaster(); // 用于检测鼠标点击的对象
-const mouse = new THREE.Vector2(); // 保存鼠标位置
-let camera; // 相机引用
-let controls;
-let hoveredObject = null; // 当前悬停的对象
-let selectedObject = null; // 当前选中的对象
-
-// 信息框状态
-const hoveredInfo = ref({
-    visible: false,
-    x: 0,
-    y: 0,
-    name: '',
+const props = defineProps({
+    userInfo: {
+        type: Object
+    },
 });
 
-// 宿舍框
-const dormInfo = ref({
-    visible: false,
-    x: 0,
-    y: 0,
-    name: '',
-    floors: [1, 2, 3, 4, 5], // 默认五层楼
-    selectedFloor: 5, // 默认显示五楼
-});
-// 楼层信息框状态
-const floorInfo = ref({
-    visible: false,
-    name: '',
-});
-
-
-
-const openFloorPlan = () => {
-    floorInfo.value.visible = true; // 打开 floor-plan
-};
-
-let targetObject = null; // 当前选中的对象
-const isHoveringInfoBox = ref(false); // 标记鼠标是否悬停在 info-box 上
-const isShowNoticeForm = ref(false); // 是否显示通知表单
+// 管理员
+const isAdmin = computed(() => {
+    return props.userInfo.role === '管理员'
+})
 
 // 缓存悬停材质
 const hoverMaterial = new THREE.MeshPhysicalMaterial({
@@ -97,6 +71,39 @@ const selectedMaterial = new THREE.MeshPhysicalMaterial({
     opacity: 1, // 透明度
 });
 
+const threeContainer = ref(null);
+const raycaster = new THREE.Raycaster(); // 用于检测鼠标点击的对象
+const mouse = new THREE.Vector2(); // 保存鼠标位置
+let camera; // 相机引用
+let controls;
+
+const buildingRefs = ref({}); // 保存模型的引用
+let hoveredObject = null; // 当前悬停的对象
+let selectedObject = null; // 当前选中的对象
+
+// 信息框状态
+const hoveredInfo = ref({
+    visible: false,
+    x: 0,
+    y: 0,
+    name: '',
+});
+
+// 宿舍框
+const dormInfo = ref({
+    visible: false,
+    x: 0,
+    y: 0,
+    name: '',
+    floors: 5, // 默认五层楼
+    selectedFloor: 1, // 默认显示五楼
+});
+
+let targetObject = null; // 当前选中的对象
+const isShowNoticeForm = ref(false); // 是否显示通知表单
+const isShowFloorPlan = ref(false); // 是否显示楼层平面图
+const buildingOptions = ref([])
+
 // 操作按钮点击事件
 const handleAction = (action) => {
     switch (action) {
@@ -111,15 +118,36 @@ const handleAction = (action) => {
     console.log(`执行操作: ${action}`);
 };
 
+// 获取宿舍楼数据
+const fetchBuildings = async () => {
+    const response = await Axios.get('/dorm/getAllBuildings');
+    const data = response.data;
+    console.log('获取宿舍楼:', data, response);
+    buildingOptions.value = data.map((building) => ({
+        name: building.name,
+        floors: building.floors,
+    }));
+};
+
+// 选择楼层
 const selectFloor = (floor) => {
     dormInfo.value.selectedFloor = floor;
-    floorInfo.value.visible = true; // 显示宿舍信息框
+    isShowFloorPlan.value = true; // 显示宿舍信息框
     console.log(`选择了第 ${floor} 楼`);
     // 可以在这里添加逻辑，比如根据楼层加载不同的数据
 };
+
 // 让相机对准目标模型
-const focusOnModel = (modelName) => {
-    console.log("buildingRefs.value", buildingRefs.value);
+const focusOnModel = (model) => {
+    // 恢复之前选中对象的材质
+    if (selectedObject) {
+        selectedObject.material = selectedObject.userData.originalMaterial;
+    }
+    // 设置选中对象的材质
+    selectedObject = model;
+    const modelName = model.name
+    model.material = selectedMaterial
+
     const target = buildingRefs.value[modelName];
     if (target) {
         targetObject = target;
@@ -154,14 +182,11 @@ const focusOnModel = (modelName) => {
                 controls.update();
             },
         });
-
-        // // 将 3D 坐标转换为屏幕坐标
-        // const vector = center.clone().project(camera);
-        // const screenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
-        // const screenY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-
+        console.log("buildingOptions.value", buildingOptions.value, modelName)
         // 显示信息框
         dormInfo.value.visible = true;
+        dormInfo.value.floors =
+            buildingOptions.value.find(item => item.name === modelName.split("-")[1]).floors
 
         console.log(`相机对准模型: ${modelName}`, { center, size });
     } else {
@@ -172,8 +197,8 @@ const focusOnModel = (modelName) => {
 // 让视角变成俯视图
 const focusOnTopView = () => {
     const target = new THREE.Vector3(0, 0, -5); // 目标点
-    const distance = 20; // 相机与目标点的距离
-
+    const distance = 25; // 相机与目标点的距离
+    dormInfo.value.visible = false;
     gsap.to(camera.position, {
         x: target.x,
         y: target.y + distance,
@@ -196,6 +221,7 @@ const focusOnTopView = () => {
     });
 };
 
+// 自动切割建筑物
 const autoSplitBuildings = (model, segments = 5) => {
     console.log('model', model, segments);
     // 1. 收集需要处理的建筑对象
@@ -225,24 +251,26 @@ const onMouseMove = throttle((event) => {
     // 有效hover
     if (intersects.length > 0) {
         const hovered = intersects[0].object;
-        // 出提示
-        if (!hoveredInfo.value?.visible || hoveredObject !== hovered) {
-            let name = hovered.userData.name
-            if (name) {
-                name = name.split("-")[1] || '未知宿舍'
-            }
-            console.log('hovered', hovered.userData.name, name);
-            hoveredInfo.value = {
-                visible: true,
-                x: event.clientX - 10,
-                y: event.clientY - 10,
-                name
-            };
+        let name = hovered.userData.name
+        if (name) {
+            name = name.split("-")[1] || '未知宿舍'
         }
+        console.log('hovered', hovered.userData.name, name);
+        hoveredInfo.value = {
+            x: event.clientX + 10,
+            y: event.clientY + 10,
+            name
+        };
+        // 出提示
+        if (!hoveredInfo.value.visible) {
+            hoveredInfo.value.visible = true;
+        }
+        // 指针变成手型
+        threeContainer.value.style.cursor = 'pointer';
         // 如果切换了悬停对象，重置之前的 hoveredObject 的材质
         if (hoveredObject !== hovered) {
             // 恢复之前选中对象的材质为默认
-            if (hoveredObject) {
+            if (hoveredObject && hoveredObject !== selectedObject) {
                 hoveredObject.material = hoveredObject.userData.originalMaterial;
             }
             // 设置新选中的对象的材质
@@ -264,29 +292,26 @@ const onMouseMove = throttle((event) => {
             hoveredObject = null;
         }
         // 隐藏信息框
-        if (hoveredInfo.value.visible && !isHoveringInfoBox.value) {
+        if (hoveredInfo.value.visible) {
             hoveredInfo.value.visible = false;
         }
+        // 恢复鼠标指针样式
+        threeContainer.value.style.cursor = 'auto';
     }
 }, 200);
 
 const onClick = () => {
     console.log('点击事件触发', hoveredObject);
     if (hoveredObject) {
-        // 恢复之前选中对象的材质
-        if (selectedObject) {
-            selectedObject.material = selectedObject.userData.originalMaterial;
-        }
-
-        // 设置选中对象的材质
-        selectedObject = hoveredObject;
-        selectedObject.material = selectedMaterial
-        focusOnModel(selectedObject.name);
-
+        focusOnModel(hoveredObject);
     }
 }
 
 onMounted(() => {
+    isAdmin.value = props.userInfo.role === 'admin'; // 是否是管理员
+    console.log("isAdmin", props.userInfo, isAdmin.value)
+    // 获取宿舍楼数据
+    fetchBuildings();
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x101010);
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -314,7 +339,7 @@ onMounted(() => {
         model.position.set(0, 0, 0); // 设置模型位置
         scene.add(model);
         console.log('模型加载完成:', scene);
-        focusOnModel('building-西一')
+        focusOnModel(buildingRefs.value['building-西一']); // 默认对准第一个建筑物
     },
         (xhr) => {
             console.log(`模型加载进度: ${(xhr.loaded / xhr.total) * 100}%`);
@@ -331,6 +356,10 @@ onMounted(() => {
     controls.minDistance = 1; // 设置最小缩放距离
     controls.maxDistance = 50; // 设置最大缩放距离
     controls.maxPolarAngle = Math.PI / 2; // 限制垂直旋转角度（防止翻转）
+
+    // 禁用交互
+    // controls.enabled = false;
+
     // 动画循环
     const animate = () => {
         requestAnimationFrame(animate);
@@ -380,6 +409,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="less">
+.wrapper {
+    overflow: hidden;
+    position: relative;
+}
+
 .three-container {
     width: 100%;
     height: 100vh;
@@ -399,7 +433,6 @@ onUnmounted(() => {
     z-index: 9;
 
     h3 {
-        margin: 0 0 10px;
         font-size: 16px;
     }
 
@@ -409,6 +442,7 @@ onUnmounted(() => {
         left: 0;
         color: #fff;
         padding: 6px 12px;
+        min-width: 112px;
     }
 
     .floor-buttons {
@@ -466,112 +500,6 @@ onUnmounted(() => {
         color: #000;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
         transform: translateY(1px);
-    }
-}
-
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5); // 半透明黑色遮罩
-    z-index: 1000; // 确保遮罩层在最上方
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    .floor-plan {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%); // 居中显示
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 1000px; // 楼层图宽度
-        height: 400px; // 楼层图高度
-        background: #f9f9f9; // 楼层背景色
-        border: 2px solid #000; // 楼层边框
-        border-radius: 8px; // 圆角
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); // 阴影效果
-        padding: 10px 100px;
-        z-index: 10;
-
-        .hallway {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%); // 居中显示
-            width: calc(100% - 200px);
-            height: 50px; // 走廊宽度
-            background: #e0e0e0; // 走廊背景色
-            border: 2px dashed #000; // 虚线边框
-            z-index: 1;
-        }
-
-        .top,
-        .bottom {
-            position: absolute;
-            display: flex;
-            gap: 10px;
-            width: calc(100% - 200px); // 房间宽度
-            justify-content: space-between;
-        }
-
-        .top {
-            top: 10px; // 靠左侧
-        }
-
-        .bottom {
-            bottom: 10px; // 靠右侧
-        }
-
-        .room {
-            width: 80px; // 房间宽度
-            height: 120px; // 房间高度
-            background: #fff; // 房间背景色
-            border: 2px solid #000; // 房间黑框
-            display: flex;
-            justify-content: center; // 房间号居中
-            align-items: center;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 4px; // 房间圆角
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // 房间阴影
-
-            &:hover {
-                background: #f0f0f0; // 悬停时背景色
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); // 悬停时阴影
-            }
-        }
-
-        .stair {
-            position: absolute;
-            width: 50px; // 楼梯宽度
-            height: 200px; // 楼梯高度
-            background: #dcdcdc; // 楼梯背景色
-            border: 2px solid #000; // 楼梯边框
-            display: flex;
-            justify-content: center; // 楼梯文字居中
-            align-items: center;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 4px; // 楼梯圆角
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // 楼梯阴影
-        }
-
-        .left-stair {
-            top: 50%;
-            left: 10px; // 靠左侧，距离楼层图 120px
-            transform: translateY(-50%);
-        }
-
-        .right-stair {
-            top: 50%;
-            right: 10px; // 靠右侧，距离楼层图 120px
-            transform: translateY(-50%);
-        }
     }
 }
 </style>

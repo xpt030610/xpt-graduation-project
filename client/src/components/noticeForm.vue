@@ -82,7 +82,6 @@
 import { ref, defineProps, defineEmits } from 'vue';
 import Axios from '../utils/axios';
 import { CloseIcon } from 'tdesign-icons-vue-next';
-import { jwtDecode } from 'jwt-decode';
 import { MessagePlugin } from 'tdesign-vue-next';
 
 const emit = defineEmits(['close']);
@@ -92,6 +91,9 @@ const props = defineProps({
     buildingId: {
         type: String,
         default: '西一', // 默认标题
+    },
+    userInfo: {
+        type: Object,
     },
 });
 
@@ -131,12 +133,10 @@ const studentOptions = ref([]); // 学生选项
 
 // 表单提交逻辑
 const handleSubmit = async () => {
-    const accessToken = localStorage.getItem("access_token");
-    const decoded = jwtDecode(accessToken);
     const notice = {
         buildingId: props.buildingId,
-        releaseId: decoded.userId || '未知学号',
-        releaseName: decoded.userName || '未知用户',
+        releaseId: props.userInfo.userId || '未知学号',
+        releaseName: props.userInfo.userName || '未知用户',
         type: noticeType.value,
         status: 'published',
         userList: studentList.value.map((student) => ({ userId: student.userId, userName: student.userName })),
@@ -192,7 +192,6 @@ const fetchRooms = async () => {
             })));
         }, []);
     }
-
 }
 
 const fetchStudents = () => {
@@ -215,8 +214,11 @@ const fetchStudents = () => {
 // 重置表单
 const resetForm = () => {
     notifyTarget.value = '';
-    title.value = '';
-    content.value = '';
+    selectedRoom.value = '';
+    selectedFloor.value = ''; // 重置楼层选择
+    studentList.value = []; // 重置学生选择
+    roomOptions.value = []; // 重置宿舍选项
+    studentOptions.value = []; // 重置学生选项
 };
 
 // 取消逻辑

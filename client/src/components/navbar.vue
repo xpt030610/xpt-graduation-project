@@ -6,9 +6,36 @@
         </div>
         <!-- 右侧功能按钮 -->
         <div class="navbar-right">
-            <button class="icon-button" @click="onNotificationClick">
-                <div class="icon-notification">消息通知</div> <!-- 消息通知图标 -->
-            </button>
+            <div class="notification-container" @mouseenter="showNotificationBox = true"
+                @mouseleave="showNotificationBox = false">
+                <button class="icon-button">
+                    <div class="icon-notification">消息通知</div>
+                </button>
+                <transition name="fade">
+                    <div v-if="showNotificationBox" class="notification-box">
+                        <p v-if="props.noticeList.length === 0">暂无消息</p>
+                        <ul>
+                            <li v-for="(notice) in props.noticeList.slice(0, 5)" :key="notice.noticeId" :class="{
+                                urgent: notice.type === 'urgent',
+                                important: notice.type === 'important',
+                                normal: notice.type !== 'urgent' && notice.type !== 'important'
+                            }">
+                                <div class="notice-header">
+                                    <span class="notice-title">{{ notice.title }}</span>
+                                    <span class="notice-time">{{ formatTime(notice.createdTime) }}</span>
+                                </div>
+                                <div class="notice-content">
+                                    {{ notice.content }}
+                                </div>
+                                <div class="notice-meta">
+                                    <span>发布人: {{ notice.releaseName }}</span>
+                                </div>
+                            </li>
+                        </ul>
+                        <button class="primary" @click="viewAllNotifications">查看全部</button>
+                    </div>
+                </transition>
+            </div>
 
             <div class="profile-container" @mouseenter="showProfileBox = true" @mouseleave="showProfileBox = false">
                 <div class="icon-button">
@@ -16,7 +43,7 @@
                 </div>
                 <transition name="fade">
                     <div v-if="showProfileBox" class="profile-box">
-                        <p>用户名: {{ userInfo.userName }}</p>
+                        <p>用户: {{ userInfo.userName }}</p>
                         <p>学号: {{ userInfo.userId }}</p>
                         <p>角色：{{ userInfo.role }}</p>
                         <p>宿舍：{{ userInfo.roomId || '未加入宿舍' }}</p>
@@ -31,7 +58,6 @@
 
 <script setup>
 import { defineProps, ref, defineEmits } from 'vue';
-
 import router from '../router';
 
 const emit = defineEmits(['showForm']);
@@ -39,6 +65,10 @@ const props = defineProps({
     userInfo: {
         type: Object
     },
+    noticeList: {
+        type: Array,
+        default: () => []
+    }
 });
 
 // 控制个人信息弹出框的显示状态
@@ -54,6 +84,17 @@ const addRoom = () => {
 const logout = () => {
     localStorage.removeItem("access_token"); // 清除 JWT
     router.push('/login'); // 跳转到登录页面
+};
+
+const showNotificationBox = ref(false); // 控制消息通知弹出框的显示状态
+const formatTime = (time) => {
+    const date = new Date(time);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+};
+const viewAllNotifications = () => {
+    // 处理查看全部通知的逻辑
+    console.log('查看全部通知');
+    emit('showForm', 'notice', true);
 };
 </script>
 
@@ -209,6 +250,133 @@ const logout = () => {
                 background: #40a9ff;
             }
 
+        }
+    }
+}
+
+.notification-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: -15px 0;
+
+    .notification-box {
+        position: absolute;
+        top: 58px;
+        right: -20px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        width: 250px;
+        padding: 15px 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-top: 0;
+
+        p {
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+
+            li {
+                font-size: 14px;
+                margin-bottom: 8px;
+                padding: 10px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 4px;
+                background: rgba(255, 255, 255, 0.1);
+                transition: background 0.3s ease;
+                cursor: pointer;
+
+                &.urgent {
+                    border-color: #ff4d4f;
+                    background: rgba(255, 77, 79, 0.2);
+
+                    &:hover {
+                        background: rgba(255, 77, 79, 0.3);
+                        border-color: #d9363e;
+                    }
+                }
+
+                &.important {
+                    border-color: #faad14;
+                    background: rgba(250, 173, 20, 0.2);
+
+                    &:hover {
+                        background: rgba(250, 173, 20, 0.3);
+                        border-color: #d48806;
+                    }
+                }
+
+                &.normal {
+                    border-color: rgba(255, 255, 255, 0.2);
+                    background: rgba(255, 255, 255, 0.1);
+
+                    &:hover {
+                        background: rgba(255, 255, 255, 0.2);
+                        border-color: rgba(255, 255, 255, 0.3);
+                    }
+                }
+
+                .notice-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                    font-size: 12px;
+
+                    .notice-title {
+                        color: #fff;
+                    }
+
+                    .notice-time {
+                        font-size: 10px;
+                        color: #ccc;
+                    }
+                }
+
+                .notice-content {
+                    font-size: 10px;
+                    color: #ddd;
+                    margin-bottom: 5px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .notice-meta {
+                    font-size: 10px;
+                    color: #aaa;
+                    display: flex;
+                    justify-content: space-between;
+                }
+            }
+        }
+
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            transition: background 0.3s ease;
+
+            &:hover {
+                background: #40a9ff;
+            }
         }
     }
 }

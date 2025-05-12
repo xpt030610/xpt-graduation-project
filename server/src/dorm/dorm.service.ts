@@ -241,6 +241,7 @@ export class DormService {
           noticeId,
           buildingId,
           releaseId,
+          releaseName,
           type,
           status,
           userList,
@@ -263,16 +264,34 @@ export class DormService {
   // 某个成员的所有通知
   async getMemberNotices(userId: string): Promise<any[]> {
     try {
-      // 查询该成员的所有通知
-      const notices = await this.noticeModel
-        .find({ userList: { $elemMatch: { userId } } })
-        .select(
-          'noticeId buildingId releaseId  title type status content createdTime',
-        )
-        .lean()
-        .exec();
-      console.log('notices', notices);
-      return notices;
+      // 判断是否为管理员
+      const user = await this.userModel.findOne({ userId }).exec();
+      if (!user) {
+        throw new Error('用户不存在');
+      }
+      if (user.role === 'admin') {
+        // 管理员查询所有通知
+        const notices = await this.noticeModel
+          .find()
+          .select(
+            'noticeId buildingId releaseId releaseName title type status content createdTime -_id',
+          )
+          .lean()
+          .exec();
+        console.log('notices', notices);
+        return notices;
+      } else {
+        // 普通成员查询自己的通知
+        const notices = await this.noticeModel
+          .find({ userList: { $elemMatch: { userId } } })
+          .select(
+            'noticeId buildingId releaseId releaseName title type status content createdTime -_id',
+          )
+          .lean()
+          .exec();
+        console.log('notices', notices);
+        return notices;
+      }
     } catch (error) {
       throw new Error(`查询成员通知失败: ${error.message}`);
     }
