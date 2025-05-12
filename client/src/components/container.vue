@@ -321,7 +321,7 @@ onMounted(() => {
 
     // 加载模型
     const loader = new GLTFLoader();
-    loader.load('/src/assets/school5.glb', (gltf) => {
+    loader.load('/src/assets/school.glb', (gltf) => {
         // 自动切割所有建筑
         const model = autoSplitBuildings(gltf.scene);
         // const model = gltf.scene;

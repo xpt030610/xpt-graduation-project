@@ -117,6 +117,7 @@ const viewAllNotifications = () => {
     /* 添加浅色底部边框 */
     animation: card-breathing 4s infinite ease-in-out;
     color: white;
+    z-index: 99;
 }
 
 /* 优雅的呼吸动效 */

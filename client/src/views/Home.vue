@@ -1,19 +1,21 @@
 <template>
     <div class="home">
         <!-- 导航栏 -->
-        <Navbar :noticeList="noticeList" @showForm="handleShowForm" />
+        <navbar :noticeList="noticeList" @showForm="handleShowForm" />
         <!-- 容器组件 -->
         <container />
         <add-dorm-form v-if="showAddDormForm" @showForm="handleShowForm" />
         <notice v-if="showNoticeBox" :noticeList="noticeList" @showForm="handleShowForm" />
+        <room />
     </div>
 </template>
 
 <script setup>
-import Navbar from '../components/navbar.vue';
+import navbar from '../components/navbar.vue';
 import container from '../components/container.vue';
 import addDormForm from '../components/addDormForm.vue';
 import notice from '../components/notice.vue';
+import room from '../components/room.vue';
 import { ref, onMounted, computed } from 'vue';
 
 import { jwtDecode } from 'jwt-decode';
