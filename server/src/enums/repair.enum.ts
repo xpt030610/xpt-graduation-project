@@ -6,10 +6,9 @@ export enum RepairStatus {
 }
 
 export enum DeviceType {
-  Light = 'light',
-  AIRCONDITION = 'aircondition',
-  SOCKET = 'socket',
+  AIR = 'air',
+  WATER = 'water',
   DOOR = 'door',
   WINDOW = 'window',
-  PIPE = 'pipe',
+  TABLE = 'table',
 }

@@ -6,6 +6,33 @@
         </div>
         <!-- 右侧功能按钮 -->
         <div class="navbar-right">
+            <div v-if="isAdmin" class="repair-container" @mouseenter="showRepairBox = true"
+                @mouseleave="showRepairBox = false">
+                <button class="icon-button">
+                    <div class="icon-repair">维修单</div>
+                </button>
+                <transition name="fade">
+                    <div v-if="showRepairBox" class="repair-box">
+                        <p v-if="props.repairList.length === 0">暂无消息</p>
+                        <ul>
+                            <li v-for="(repair) in props.repairList.slice(0, 3)" :key="repair.deviceId">
+                                <div class="notice-header">
+                                    <span class="notice-title">{{ repair.roomId }} - {{ repair.deviceName }}</span>
+                                    <span class="notice-time">{{ formatTime(repair.createdTime) }}</span>
+                                </div>
+                                <div class="notice-content">
+                                    {{ repair.description }}
+                                </div>
+                                <div class="notice-meta">
+                                    <span>发布人: {{ repair.reporterName }}</span>
+                                </div>
+                            </li>
+                        </ul>
+                        <button class="primary" @click="viewAllNotifications">查看全部</button>
+                    </div>
+                </transition>
+            </div>
+
             <div class="notification-container" @mouseenter="showNotificationBox = true"
                 @mouseleave="showNotificationBox = false">
                 <button class="icon-button">
@@ -62,10 +89,15 @@ import router from '../router';
 import { useStore } from '../stores';
 const Store = useStore();
 const userInfo = computed(() => Store.userInfo);
+const isAdmin = computed(() => Store.isAdmin);
 
 const emit = defineEmits(['showForm']);
 const props = defineProps({
     noticeList: {
+        type: Array,
+        default: () => []
+    },
+    repairList: {
         type: Array,
         default: () => []
     }
@@ -95,6 +127,8 @@ const viewAllNotifications = () => {
     console.log('查看全部通知');
     emit('showForm', 'notice', true);
 };
+
+const showRepairBox = ref(false); // 控制消息通知弹出框的显示状态
 </script>
 
 <style scoped lang="less">
@@ -171,6 +205,11 @@ const viewAllNotifications = () => {
     /* 鼠标悬停放大效果 */
     opacity: 0.8;
     /* 鼠标悬停透明度变化 */
+}
+
+.icon-repair::before {
+    content: '🔧';
+    /* 维修单图标 */
 }
 
 /* 图标样式 */
@@ -254,16 +293,18 @@ const viewAllNotifications = () => {
     }
 }
 
-.notification-container {
+.notification-container,
+.repair-container {
     position: relative;
     display: flex;
     align-items: center;
     margin: -15px 0;
 
-    .notification-box {
+    .notification-box,
+    .repair-box {
         position: absolute;
         top: 58px;
-        right: -20px;
+        right: -30px;
         background: rgba(0, 0, 0, 0.9);
         color: white;
         border-radius: 0 0 8px 8px;

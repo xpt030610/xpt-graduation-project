@@ -1,7 +1,7 @@
 <template>
     <div class="home">
         <!-- 导航栏 -->
-        <navbar :noticeList="noticeList" @showForm="handleShowForm" />
+        <navbar :noticeList="noticeList" :repairList="repairList" @showForm="handleShowForm" />
         <!-- 容器组件 -->
         <container />
         <add-dorm-form v-if="showAddDormForm" @showForm="handleShowForm" />
@@ -19,11 +19,10 @@ import room from '../components/room.vue';
 import { ref, onMounted, computed } from 'vue';
 
 import { jwtDecode } from 'jwt-decode';
-
-// import Axios from '../utils/axios';
 import { useStore } from '../stores';
 const Store = useStore();
 const noticeList = computed(() => Store.noticeList);
+const repairList = computed(() => Store.repairList);
 const isRoom = computed(() => Store.isRoom);
 
 const getUserInfo = () => {
@@ -54,6 +53,7 @@ const showNoticeBox = ref(false); // 控制通知列表的显示状态
 onMounted(() => {
     getUserInfo();
     Store.getNoticeList()
+    Store.getRepairList()
 });
 </script>
 

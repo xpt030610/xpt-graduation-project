@@ -52,6 +52,8 @@ import * as THREE from 'three';
 import axios from 'axios';
 import router from '../router';
 import { MessagePlugin } from 'tdesign-vue-next';
+import { useStore } from '../stores';
+const Store = useStore();
 
 const isLogin = ref(true);
 const userId = ref('');
@@ -100,10 +102,9 @@ const handleLogin = async () => {
         console.log('登录成功:', response);
         MessagePlugin.success('登录成功');
         const token = response.data.access_token;
-        // 将 token 存储到 localStorage
         localStorage.setItem('access_token', token);
-        // 设置 Axios 默认 Authorization 头
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        Store.setRoomInfo()
         // 跳转到首页
         router.push('/');
     } catch (error) {

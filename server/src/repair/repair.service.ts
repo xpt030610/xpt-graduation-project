@@ -20,9 +20,13 @@ export class RepairService {
     roomId: string,
     device: DeviceType, // light/aircondition/socket/door/window/pipe
     userId: string,
+    userName: string,
+    deviceName: string,
     description: string,
   ): Promise<any> {
     try {
+      console.log(roomId, device, userId, description);
+
       const user = await this.userModel.findOne({ userId }).exec();
       const room = await this.roomModel.findOne({ roomId }).exec();
 
@@ -38,11 +42,14 @@ export class RepairService {
         .exec();
       // repair集合增加一个保修单
       const repair = new this.repairModel({
+        roomId,
         deviceId: deviceInfo._id,
         reporterId: userId,
+        reporterName: userName,
+        deviceName,
         description,
         status: 'pending',
-        createdAt: new Date(),
+        createdTime: new Date(),
       });
       await repair.save();
       return {
@@ -50,6 +57,18 @@ export class RepairService {
       };
     } catch (error) {
       throw new Error(`提保修单失败: ${error.message}`);
+    }
+  }
+
+  // 获取保修单列表
+  async getRepairList(): Promise<any> {
+    try {
+      const repairList = await this.repairModel.find().exec();
+      return {
+        data: repairList,
+      };
+    } catch (error) {
+      throw new Error(`获取保修单列表失败: ${error.message}`);
     }
   }
 }

@@ -5,6 +5,7 @@ export const useStore = defineStore("user", {
     isAdmin: false, // 是否是管理员
     userInfo: {}, // 用户信息
     noticeList: [], // 通知列表
+    repairList: [],
     isRoom: false,
     roomInfo: {},
   }),
@@ -31,6 +32,11 @@ export const useStore = defineStore("user", {
         this.roomInfo = {};
       }
       console.log("pinia roomInfo", this.roomInfo, this.isRoom);
+    },
+    async getRepairList() {
+      const response = await Axios.post("/repair/getRepairList");
+      this.repairList = response.data.data;
+      console.log("获取维修列表:", response.data);
     },
   },
 });

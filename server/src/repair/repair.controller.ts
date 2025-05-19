@@ -19,6 +19,8 @@ export class RepairController {
       roomId: string;
       device: DeviceType; // light/aircondition/socket/door/window/pipe
       userId: string;
+      userName: string;
+      deviceName: string;
       description: string;
     },
   ) {
@@ -27,12 +29,33 @@ export class RepairController {
         createDto.roomId,
         createDto.device,
         createDto.userId,
+        createDto.userName,
+        createDto.deviceName,
         createDto.description,
       );
       return {
         success: true,
         message: '报修成功',
         data: availableRooms,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+  @Post('getRepairList')
+  async getRepairList() {
+    try {
+      const repairList = await this.repairService.getRepairList();
+      return {
+        success: true,
+        message: '查询成功',
+        data: repairList,
       };
     } catch (error) {
       throw new HttpException(

@@ -29,6 +29,10 @@ export class Device {
 
 @Schema({ collection: 'Repair', timestamps: true })
 export class Repair {
+  // 房间ID
+  @Prop({ required: true })
+  roomId: string;
+
   // 设备ID
   @Prop({ type: ObjectId, required: true })
   deviceId: string;
@@ -36,6 +40,14 @@ export class Repair {
   // 保修人ID
   @Prop({ required: true })
   reporterId: string;
+
+  // 保修人
+  @Prop({ required: true })
+  reporterName: string;
+
+  // 保修设备
+  @Prop({ required: true })
+  deviceName: string;
 
   // 问题描述
   @Prop({ required: true })
@@ -47,7 +59,7 @@ export class Repair {
 
   // 创建日期
   @Prop({ required: true })
-  createdAt: Date;
+  createdTime: Date;
 }
 
 export const DeviceSchema = SchemaFactory.createForClass(Device);
