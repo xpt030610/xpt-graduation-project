@@ -42,8 +42,8 @@ export class RepairService {
         .exec();
       // repair集合增加一个保修单
       const repair = new this.repairModel({
-        roomId,
         deviceId: deviceInfo._id,
+        roomId,
         reporterId: userId,
         reporterName: userName,
         deviceName,

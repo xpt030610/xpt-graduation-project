@@ -8,8 +8,10 @@
         <div v-if="dormInfo.visible" class="dorm-box" :style="{ top: dormInfo.y + 'px', left: dormInfo.x + 'px' }">
             <h3>{{ dormInfo.name }}</h3>
             <div class="floor-buttons">
-                <button class="btn" v-for="floor in dormInfo.floors" :key="floor"
-                    :class="{ active: dormInfo.selectedFloor === floor }" @click="selectFloor(floor)">
+                <button class="btn" v-for="(floor, index) in dormInfo.floors" :key="floor" :class="{
+                    active: dormInfo.selectedFloor === floor,
+                    error: isShowError && errorFloor.includes(index + 1)
+                }" @click="selectFloor(floor)">
                     {{ floor }} 楼
                 </button>
                 <button v-if="isAdmin" class="btn primary" @click="handleAction('notice')">发送通知</button>
@@ -20,7 +22,9 @@
         <NoticeForm v-if="isShowNoticeForm" :buildingId="hoveredInfo.name || '西一'" @close="isShowNoticeForm = false" />
         <div class="btns">
             <button class="btn" @click="focusOnTopView">宿舍楼俯视图</button>
-            <button class="btn" @click="showError">宿舍楼状态</button>
+            <button class="btn" @click="showError" :class="{ 'btn-warning-active': isShowError }">
+                宿舍楼状态
+            </button>
         </div>
     </div>
 </template>
@@ -152,7 +156,9 @@ const fetchErrorBuildings = async () => {
     console.log('errorBuildings.value', errorBuildings.value);
 };
 
+const isShowError = ref(false)
 const showError = () => {
+    isShowError.value = !isShowError.value;
     for (const building in errorBuildings.value) {
         console.log('building1', building);
         const model = buildingRefs.value['building-' + building]
@@ -160,25 +166,31 @@ const showError = () => {
             console.log('model', model);
             model.material = model.material.clone();
             model.material.emissive = new THREE.Color(0x000000);
-            gsap.to(model.material.emissive, {
-                // 使用暖橙色
-                r: 1, g: 0.5, b: 0, // 调整 RGB 分量为暖橙色
-                duration: 1,
-                repeat: -1, // Repeat indefinitely
-                yoyo: true, // Go back and forth
-                ease: "power1.inOut"
-            });
-            gsap.to(model.material, {
-                emissiveIntensity: 0.8, // 脉冲强度
-                duration: 1,
-                repeat: -1, // Repeat indefinitely
-                yoyo: true, // Go back and forth
-                ease: "power1.inOut"
-            });
+            if (isShowError.value) {
+                gsap.to(model.material.emissive, {
+                    // 使用暖橙色
+                    r: 1, g: 0.5, b: 0, // 调整 RGB 分量为暖橙色
+                    duration: 4,
+                    repeat: -1, // Repeat indefinitely
+                    yoyo: true, // Go back and forth
+                    ease: "power1.inOut"
+                });
+                gsap.to(model.material, {
+                    emissiveIntensity: 0.8, // 脉冲强度
+                    duration: 4,
+                    repeat: -1, // Repeat indefinitely
+                    yoyo: true, // Go back and forth
+                    ease: "power1.inOut"
+                });
+            } else {
+                gsap.killTweensOf(model.material.emissive);
+                gsap.killTweensOf(model.material);
+                // 恢复原始材质
+                model.material = model.userData.originalMaterial;
+            }
         }
     }
     console.log("building", buildingRefs.value, errorBuildings.value)
-
 }
 
 // 选择楼层
@@ -189,16 +201,19 @@ const selectFloor = (floor) => {
     // 可以在这里添加逻辑，比如根据楼层加载不同的数据
 };
 
+const errorFloor = ref([])
 // 让相机对准目标模型
 const focusOnModel = (model) => {
     // 恢复之前选中对象的材质
-    if (selectedObject) {
+    if (selectedObject && !isShowError.value) {
         selectedObject.material = selectedObject.userData.originalMaterial;
     }
     // 设置选中对象的材质
     selectedObject = model;
     const modelName = model.name
-    model.material = selectedMaterial
+    if (!isShowError.value) {
+        model.material = selectedMaterial
+    }
 
     const target = buildingRefs.value[modelName];
     if (target) {
@@ -239,6 +254,22 @@ const focusOnModel = (model) => {
         dormInfo.value.visible = true;
         dormInfo.value.floors =
             buildingOptions.value.find(item => item.name === modelName.split("-")[1]).floors
+        // 如果有error楼层则显示
+        const name = modelName.split("-")[1]
+        errorFloor.value = []
+        if (errorBuildings.value[name]) {
+            const floorsWithErrors = errorBuildings.value[name];
+            for (const floor in floorsWithErrors) {
+                // 确保键是数字或可以转换为数字的字符串
+                if (!isNaN(Number(floor))) {
+                    errorFloor.value.push(Number(floor)); // 将楼层号转换为数字并添加到数组
+                } else {
+                    console.warn(`发现非数字楼层键: ${floor}`);
+                }
+            }
+            console.log('errorBuildings.value[name]', errorBuildings.value[name], errorFloor.value)
+        }
+        console.log('errorBuildings.value', errorBuildings.value, name, errorBuildings.value[name]);
 
         console.log(`相机对准模型: ${modelName}`, { center, size });
     } else {
@@ -320,7 +351,7 @@ const onMouseMove = throttle((event) => {
         // 指针变成手型
         threeContainer.value.style.cursor = 'pointer';
         // 如果切换了悬停对象，重置之前的 hoveredObject 的材质
-        if (hoveredObject !== hovered) {
+        if (hoveredObject !== hovered && !isShowError.value) {
             // 恢复之前选中对象的材质为默认
             if (hoveredObject && hoveredObject !== selectedObject) {
                 hoveredObject.material = hoveredObject.userData.originalMaterial;
@@ -335,6 +366,8 @@ const onMouseMove = throttle((event) => {
             if (hoveredObject.userData) {
                 hoveredObject.material = hoverMaterial;
             }
+        } else if (isShowError.value) {
+            hoveredObject = hovered;
         }
     }
     else {
@@ -491,7 +524,6 @@ onUnmounted(() => {
         position: relative;
         top: 0;
         left: 0;
-        color: #fff;
         padding: 6px 12px;
         min-width: 112px;
     }
@@ -502,8 +534,6 @@ onUnmounted(() => {
         gap: 5px;
 
         .btn {
-            background: #fff;
-            color: #333;
             font-size: 16px;
             padding: 6px 24px;
 
@@ -552,11 +582,40 @@ onUnmounted(() => {
         transform: translateY(-2px);
     }
 
-    &:active {
-        background: #e6e6e6;
-        color: #000;
+    &.active {
+        color: #007bff;
+        border: 1px solid #007bff;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
         transform: translateY(1px);
+    }
+
+    &.error {
+        background-color: #ffc107;
+        color: #343a40;
+    }
+}
+
+.btn-warning-active {
+    /* 浅黄色背景 */
+    background-color: #fffacd;
+    /* 例如：LemonChiffon */
+    border-color: #ffc107;
+    /* 可以保留边框颜色或根据需要修改 */
+    color: #343a40;
+    /* 深色文本 */
+    box-shadow: 0 0 10px #ffc107;
+    /* 黄色光晕效果 */
+    transition: all 0.3s ease;
+    /* 添加过渡效果 */
+
+    /* 新增：hover 状态样式 */
+    &:hover {
+        background-color: #ffe4b5;
+        /* 鼠标悬停时颜色稍微变深 */
+        box-shadow: 0 0 15px #ffc107;
+        /* 悬停时光晕效果增强 */
+        transform: translateY(-1px);
+        /* 轻微上移效果 */
     }
 }
 </style>

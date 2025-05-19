@@ -61,6 +61,7 @@ export class DormService {
 
   // 添加宿舍成员
   async addMember(roomId: string, userId: string): Promise<any> {
+    console.log('roomId', roomId, 'userId', userId);
     // 获取完整用户信息
     const user = await this.userModel.findOne({ userId }).exec();
     if (!user) {
@@ -163,7 +164,6 @@ export class DormService {
       // 查询该宿舍楼的所有房间
       const rooms = await this.roomModel
         .find({ buildingId, floor })
-        .select('roomId bedCount')
         .lean()
         .exec();
 
@@ -174,12 +174,11 @@ export class DormService {
           // 查询每个房间的宿舍成员
           const members = await this.userModel
             .find({ roomId: room.roomId }) // 根据 roomId 查询用户
-            .select('userName userId') // 仅返回用户名和用户ID
             .lean()
             .exec();
 
           return {
-            roomId: room.roomId,
+            ...room,
             totalMembers: members.length,
             members,
           };

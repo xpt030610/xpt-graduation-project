@@ -1,6 +1,17 @@
 <template>
     <div class="wrapper">
         <div ref="threeContainer" class="three-container"></div>
+        <div v-if="roomInfo" class="room-info-box">
+            <h3>房间信息</h3>
+            <div><strong>房间:</strong> {{ roomInfo.roomId }}</div>
+            <div :class="{ error: isError('temperature') }"><strong>温度:</strong> {{ roomInfo.temperature }}°C</div>
+            <div :class="{ error: isError('humidity') }"><strong>湿度:</strong> {{ roomInfo.humidity }}%</div>
+            <div :class="{ error: isError('smoke') }"><strong>烟雾浓度:</strong> {{ roomInfo.smoke }}%</div>
+            <div v-if="roomInfo.members">
+                <strong>用户成员:</strong>
+                <div v-for="member in roomInfo.members">{{ member.userName }}</div>
+            </div>
+        </div>
         <div class="btns">
             <button class="btn" @click="focusOnDetail">宿舍内饰图</button>
             <button class="btn" @click="focusOnTop">俯视图</button>
@@ -27,11 +38,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import gsap from 'gsap';
 import fixForm from './fixForm.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import Axios from '../utils/axios';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { useStore } from '../stores';
 const Store = useStore();
+const roomInfo = computed(() => Store.roomInfo)
 
 const threeContainer = ref(null);
 let camera;
@@ -171,6 +183,16 @@ const focusOnModel = (modelName, distance1, distance2, distance3) => {
     }
 };
 
+const isError = (type) => {
+    switch (type) {
+        case 'temperature':
+            return roomInfo.value.temperature < 15 || roomInfo.value.temperature > 30;
+        case 'humidity':
+            return roomInfo.value.humidity > 70;
+        case 'smoke':
+            return roomInfo.value.smoke > 50;
+    }
+}
 onMounted(() => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x101010);
@@ -263,6 +285,42 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+
+    .room-info-box {
+        position: absolute;
+        top: 80px;
+        /* 距离顶部 */
+        right: 20px;
+        /* 距离右侧 */
+        background: rgba(0, 0, 0, 0.7);
+        /* 半透明黑色背景 */
+        color: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        font-size: 14px;
+        z-index: 12;
+        /* 确保在其他元素之上 */
+        pointer-events: none;
+        /* 允许鼠标事件穿透，不影响下方交互 */
+
+        h3 {
+            margin-top: 0;
+            font-size: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .error {
+            color: #ff0000;
+        }
+
+        strong {
+            color: #ccc;
+            /* 标签颜色稍浅 */
+        }
+    }
 
     .btns {
         display: flex;

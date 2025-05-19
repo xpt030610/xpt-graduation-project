@@ -108,12 +108,13 @@ const handleSubmit = async () => {
         MessagePlugin.error('请选择宿舍');
         return;
     }
-    console.log('申请加入宿舍:', selectedRoom.value);
+    console.log('申请加入宿舍:', selectedRoom.value, userInfo.value.userId);
     try {
         const response = await Axios.post('/dorm/join', {
             roomId: selectedRoom.value,
-            userId: userInfo.userId,
+            userId: userInfo.value.userId,
         });
+
         const data = response.data;
         console.log('申请加入宿舍:', data, response);
         MessagePlugin.success(`成功进入${selectedRoom.value}宿舍，请重新登录`);

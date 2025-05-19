@@ -128,7 +128,7 @@ for (const building of buildings) {
 }
 
 // 3. 初始化床位和设备
-const deviceTypes = ["water", "aircondition", "table", "door", "window"];
+const deviceTypes = ["water", "air", "table", "door", "window"];
 
 db.Room.find().forEach((room) => {
   const beds = [];

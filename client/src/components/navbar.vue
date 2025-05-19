@@ -6,8 +6,7 @@
         </div>
         <!-- 右侧功能按钮 -->
         <div class="navbar-right">
-            <div v-if="isAdmin" class="repair-container" @mouseenter="showRepairBox = true"
-                @mouseleave="showRepairBox = false">
+            <div class="repair-container" @mouseenter="showRepairBox = true" @mouseleave="showRepairBox = false">
                 <button class="icon-button">
                     <div class="icon-repair">维修单</div>
                 </button>
@@ -28,7 +27,7 @@
                                 </div>
                             </li>
                         </ul>
-                        <button class="primary" @click="viewAllNotifications">查看全部</button>
+                        <button class="primary" @click="viewAllRepairs">查看全部</button>
                     </div>
                 </transition>
             </div>
@@ -127,7 +126,11 @@ const viewAllNotifications = () => {
     console.log('查看全部通知');
     emit('showForm', 'notice', true);
 };
-
+const viewAllRepairs = () => {
+    // 处理查看全部维修单的逻辑
+    console.log('查看全部维修单');
+    emit('showForm', 'repair', true);
+};
 const showRepairBox = ref(false); // 控制消息通知弹出框的显示状态
 </script>
 

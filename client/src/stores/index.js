@@ -35,8 +35,15 @@ export const useStore = defineStore("user", {
     },
     async getRepairList() {
       const response = await Axios.post("/repair/getRepairList");
-      this.repairList = response.data.data;
-      console.log("获取维修列表:", response.data);
+
+      if (this.isAdmin) {
+        this.repairList = response.data.data;
+      } else {
+        this.repairList = response.data.data.filter(
+          (item) => item.reporterId === this.userInfo.userId
+        );
+      }
+      console.log("获取维修列表:", response.data, this.repairList);
     },
   },
 });

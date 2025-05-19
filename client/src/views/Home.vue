@@ -6,6 +6,7 @@
         <container />
         <add-dorm-form v-if="showAddDormForm" @showForm="handleShowForm" />
         <notice v-if="showNoticeBox" :noticeList="noticeList" @showForm="handleShowForm" />
+        <repair v-if="showRepairBox" :repairList="repairList" @showForm="handleShowForm" />
         <room v-if="isRoom" />
     </div>
 </template>
@@ -16,6 +17,7 @@ import container from '../components/container.vue';
 import addDormForm from '../components/addDormForm.vue';
 import notice from '../components/notice.vue';
 import room from '../components/room.vue';
+import repair from '../components/repair.vue';
 import { ref, onMounted, computed } from 'vue';
 
 import { jwtDecode } from 'jwt-decode';
@@ -45,10 +47,13 @@ const handleShowForm = (type, value) => {
         showAddDormForm.value = value; // 显示添加宿舍表单
     } else if (type === 'notice') {
         showNoticeBox.value = value; // 显示通知列表
+    } else if (type === 'repair') {
+        showRepairBox.value = value; // 显示维修列表
     }
 };
 
 const showNoticeBox = ref(false); // 控制通知列表的显示状态
+const showRepairBox = ref(false)
 
 onMounted(() => {
     getUserInfo();

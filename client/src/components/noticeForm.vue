@@ -31,8 +31,8 @@
                     <!-- 学生选择 -->
                     <div class="form-group" v-if="notifyTarget === 'person' && selectedRoom">
                         <div class="label">选择学生</div>
-                        <t-select id="studentSelect" v-model="studentList" placeholder="请选择学生"
-                            :options="studentOptions" />
+                        <t-select id="studentSelect" v-model="studentList" placeholder="请选择学生" :options="studentOptions"
+                            multiple />
                     </div>
 
                     <!-- 学生名单 -->
@@ -133,6 +133,7 @@ const studentOptions = ref([]); // 学生选项
 
 // 表单提交逻辑
 const handleSubmit = async () => {
+    console.log('studentList', studentList.value)
     const notice = {
         buildingId: props.buildingId,
         releaseId: userInfo.userId || '未知学号',
@@ -149,7 +150,7 @@ const handleSubmit = async () => {
         const data = response.data;
         MessagePlugin.success('通知发送成功！');
         console.log('通知发送结果:', notice, data);
-
+        Store.getNoticeList()
         // 重置表单
         resetForm();
     } catch (error) {

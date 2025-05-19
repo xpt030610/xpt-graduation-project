@@ -1,5 +1,5 @@
 <template>
-    <transition name="fade">
+    <div class="notification-wrapper">
         <div class="notification-table-container">
             <div class="table-header">
                 <h2>所有通知</h2>
@@ -35,33 +35,34 @@
                     </tr>
                 </tbody>
             </table>
-            <!-- 详细通知弹窗 -->
-            <div v-if="selectedNotice" class="notice-detail-modal">
-                <div class="modal-content">
-                    <h3 v-if="!isChange">{{ selectedNotice.title }}</h3>
-                    <div v-else class="edit-title">
-                        <strong>修改标题: </strong>
-                        <t-input v-model="selectedNotice.title" placeholder="请输入标题" />
-                    </div>
-                    <p><strong>发布人:</strong> {{ selectedNotice.releaseName }}</p>
-                    <p><strong>状态:</strong> {{ getStatus(selectedNotice.status) }}</p>
-                    <p><strong>宿舍楼:</strong> {{ selectedNotice.buildingId }}</p>
-                    <p><strong>时间:</strong> {{ formatTime(selectedNotice.createdTime) }}</p>
-                    <p v-if="!isChange"><strong>类型:</strong> {{ getTypeLabel(selectedNotice.type) }}</p>
-                    <div v-else class="edit-title">
-                        <strong>修改类型:</strong>
-                        <t-select v-model="selectedNotice.type"
-                            :options="[{ label: '普通', value: 'normal' }, { label: '重要', value: 'important' }, { label: '紧急', value: 'urgent' }]" />
-                    </div>
-                    <p><strong>内容:</strong></p>
-                    <p v-if="!isChange">{{ selectedNotice.content }}</p>
-                    <t-input v-else v-model="selectedNotice.content" placeholder="请输入内容" />
-                    <CloseIcon class="close-button" @click="selectedNotice = null" />
-                </div>
-                <button v-if="isChange" class="edit-button" @click="changeNotice">保存修改</button>
-            </div>
+
         </div>
-    </transition>
+        <!-- 详细通知弹窗 -->
+        <div v-if="selectedNotice" class="notice-detail-modal">
+            <div class="modal-content">
+                <h3 v-if="!isChange">{{ selectedNotice.title }}</h3>
+                <div v-else class="edit-title">
+                    <strong>修改标题: </strong>
+                    <t-input v-model="selectedNotice.title" placeholder="请输入标题" />
+                </div>
+                <p><strong>发布人:</strong> {{ selectedNotice.releaseName }}</p>
+                <p><strong>状态:</strong> {{ getStatus(selectedNotice.status) }}</p>
+                <p><strong>宿舍楼:</strong> {{ selectedNotice.buildingId }}</p>
+                <p><strong>时间:</strong> {{ formatTime(selectedNotice.createdTime) }}</p>
+                <p v-if="!isChange"><strong>类型:</strong> {{ getTypeLabel(selectedNotice.type) }}</p>
+                <div v-else class="edit-title">
+                    <strong>修改类型:</strong>
+                    <t-select v-model="selectedNotice.type"
+                        :options="[{ label: '普通', value: 'normal' }, { label: '重要', value: 'important' }, { label: '紧急', value: 'urgent' }]" />
+                </div>
+                <p><strong>内容:</strong></p>
+                <p v-if="!isChange">{{ selectedNotice.content }}</p>
+                <t-input v-else v-model="selectedNotice.content" placeholder="请输入内容" />
+                <CloseIcon class="close-button" @click="selectedNotice = null" />
+            </div>
+            <button v-if="isChange" class="edit-button" @click="changeNotice">保存修改</button>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -140,6 +141,13 @@ const changeNotice = async () => {
 </script>
 
 <style scoped lang="less">
+.notification-wrapper {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+}
+
 .notification-table-container {
     position: fixed;
     top: 50%;
@@ -214,33 +222,35 @@ const changeNotice = async () => {
         }
     }
 
-    .detail-button,
-    .edit-button {
-        background: #1890ff;
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
 
-        &:hover {
-            background: #40a9ff;
-        }
+}
+
+.detail-button,
+.edit-button {
+    background: #1890ff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+        background: #40a9ff;
     }
+}
 
-    .edit-button {
-        background: #52c41a;
-        margin-left: 10px;
+.edit-button {
+    background: #52c41a;
+    margin-left: 10px;
 
-        &:hover {
-            background: #73d13d;
-        }
+    &:hover {
+        background: #73d13d;
     }
 }
 
 .notice-detail-modal {
-    position: fixed;
+    position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -249,7 +259,7 @@ const changeNotice = async () => {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     z-index: 1100;
-    width: 75%;
+    width: 80%;
     overflow-y: auto;
     padding: 20px;
 

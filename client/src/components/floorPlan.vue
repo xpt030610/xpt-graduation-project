@@ -7,13 +7,13 @@
             <div class="hallway"></div>
             <div class="top">
                 <div class="room" v-for="room in roomList.slice(0, Math.ceil(roomList.length / 2))" :key="room.roomId"
-                    @click="openRoom(room)">
+                    @click="openRoom(room)" :class="{ error: errorRooms.find(item => item.roomId === room.roomId) }">
                     {{ room.roomId }}
                 </div>
             </div>
             <div class="bottom">
                 <div class="room" v-for="room in roomList.slice(Math.ceil(roomList.length / 2))" :key="room.roomId"
-                    @click="openRoom(room)">
+                    @click="openRoom(room)" :class="{ error: errorRooms.find(item => item.roomId === room.roomId) }">
                     {{ room.roomId }}
                 </div>
             </div>
@@ -21,11 +21,11 @@
     </div>
 </template>
 <script setup>
-import { defineEmits, defineProps, ref, onMounted } from 'vue';
+import { defineEmits, defineProps, ref, onMounted, computed } from 'vue';
 import Axios from '../utils/axios';
 import { useStore } from '../stores';
 const Store = useStore();
-
+const userInfo = computed(() => Store.userInfo)
 const emit = defineEmits(['close']);
 const props = defineProps({
     floorInfo: {
@@ -53,12 +53,35 @@ const fetchRooms = async () => {
     roomList.value = data.roomDetails
 };
 
+const errorRooms = ref([]); // 问题宿舍列表
+const searchErrorRooms = async () => {
+    const response = await Axios.get('/dorm/checkRoomIndicators');
+    const data = response.data;
+    console.log('获取问题宿舍:', data, response);
+
+    errorRooms.value = data.filter((item) => {
+        if (props.buildingId !== item.buildingId) return false;
+        return true;
+    });
+    console.log('问题宿舍:', errorRooms.value, response);
+}
 const openRoom = (room) => {
-    Store.setRoomInfo(room)
+    if (Store.isAdmin) {
+        Store.setRoomInfo(room)
+    } else {
+        console.log('用户未登录', userInfo.value, room)
+        if (userInfo.value.roomId !== room.roomId) {
+            MessagePlugin.error(`只能查看自己的宿舍(你的宿舍是${userInfo.value.roomId})`);
+        } else {
+            Store.setRoomInfo(room)
+
+        }
+    }
 }
 
 onMounted(() => {
     fetchRooms();
+    searchErrorRooms()
 });
 </script>
 <style scoped lang="less">
@@ -147,6 +170,11 @@ onMounted(() => {
                 background: #f0f0f0; // 悬停时背景色
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); // 悬停时阴影
                 cursor: pointer;
+            }
+
+            &.error {
+                background: #ffc107; // 错误时黄色
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); // 错误时阴影
             }
         }
 

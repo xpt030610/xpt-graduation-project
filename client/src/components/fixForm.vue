@@ -2,7 +2,7 @@
     <div class="fix-form-overlay" @click.self="handleCancel">
         <div class="fix-form">
             <CloseIcon class="close-icon" @click="handleCancel" />
-            <h2>设备保修</h2>
+            <h2>设备维修</h2>
 
             <div class="form-content">
                 <div class="form-group">
@@ -86,6 +86,7 @@ const handleSubmit = async () => {
     const data = response.data;
     console.log('设备保修:', data, response);
     MessagePlugin.success('设备保修成功')
+    Store.getRepairList()
     emit('close')
 }
 </script>
