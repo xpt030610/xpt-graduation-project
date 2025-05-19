@@ -96,13 +96,13 @@ function initRooms(buildingName, floors, roomsPerFloor) {
       let humidity = Math.floor(Math.random() * 70); // 0-70%之间的随机值
       let smoke = Math.floor(Math.random() * 50); // 0-50之间的随机值
       // 如果是异常房间，生成异常数据
-      if (Math.random() < 0.05) {
+      if (Math.random() < 0.001) {
         temperature = Math.floor(Math.random() * 10) + 31; // 温度在31-40°C之间
       }
-      if (Math.random() < 0.05) {
+      if (Math.random() < 0.001) {
         humidity = Math.floor(Math.random() * 28) + 71; // 湿度在71-99%之间
       }
-      if (Math.random() < 0.05) {
+      if (Math.random() < 0.001) {
         smoke = Math.floor(Math.random() * 49) + 51; // 烟雾浓度在51-100之间
       }
       rooms.push({
@@ -119,19 +119,16 @@ function initRooms(buildingName, floors, roomsPerFloor) {
   }
   db.Room.insertMany(rooms);
 }
-
-initRooms(buildings[0].name, 6, 40);
-initRooms(buildings[1].name, 5, 35);
+for (const building of buildings) {
+  if (Math.random() < 0.5) {
+    initRooms(building.name, building.floors, 40);
+  } else {
+    initRooms(building.name, building.floors, 34);
+  }
+}
 
 // 3. 初始化床位和设备
-const deviceTypes = [
-  "light",
-  "aircondition",
-  "socket",
-  "door",
-  "window",
-  "pipe",
-];
+const deviceTypes = ["water", "aircondition", "table", "door", "window"];
 
 db.Room.find().forEach((room) => {
   const beds = [];

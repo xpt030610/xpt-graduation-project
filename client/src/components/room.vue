@@ -1,8 +1,12 @@
 <template>
     <div class="wrapper">
         <div ref="threeContainer" class="three-container"></div>
-        <button class="btn" @click="focusOnDetail">宿舍内饰图</button>
-        <button class="btn" @click="focusOnTop">俯视图</button>
+        <div class="btns">
+            <button class="btn" @click="focusOnDetail">宿舍内饰图</button>
+            <button class="btn" @click="focusOnTop">俯视图</button>
+            <button class="btn eqit" @click="eqit">退出</button>
+        </div>
+
     </div>
 </template>
 
@@ -13,26 +17,21 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import gsap from 'gsap';
 
 import { ref, onMounted } from 'vue';
-import { useStore } from '../stores';
 import Axios from '../utils/axios';
 import { MessagePlugin } from 'tdesign-vue-next';
+import { useStore } from '../stores';
+const Store = useStore();
 
 const threeContainer = ref(null);
 let camera;
 let controls;
 
 const focusOnDetail = () => {
-    // 对准模型
-    camera.position.set(2.76, 1.43, -11.39); // 设置相机位置
-    camera.lookAt(-0.243, -0.220, 0.944); // 设置相机朝向
-}
-
-const focusOnTop = () => {
     // 使用 gsap 平滑移动相机位置
     gsap.to(camera.position, {
-        x: 1.9994,
-        y: 5.6595,
-        z: -11.2219,
+        x: 2.64,
+        y: 1.51,
+        z: -11.03,
         duration: 1, // 动画持续时间（秒）
         ease: 'power2.out', // 缓动效果
         onUpdate: () => {
@@ -43,9 +42,37 @@ const focusOnTop = () => {
 
     // 使用 gsap 平滑移动 OrbitControls 的目标点
     gsap.to(controls.target, {
-        x: 1.9744,
-        y: -8.2624,
-        z: -7.3521,
+        x: 0,
+        y: 0,
+        z: 0,
+        duration: 1, // 动画持续时间（秒）
+        ease: 'power2.out',
+        onUpdate: () => {
+            controls.update();
+        },
+    });
+    debugCamera()
+}
+
+const focusOnTop = () => {
+    // 使用 gsap 平滑移动相机位置
+    gsap.to(camera.position, {
+        x: 2.10,
+        y: 6.22,
+        z: -9.77,
+        duration: 1, // 动画持续时间（秒）
+        ease: 'power2.out', // 缓动效果
+        onUpdate: () => {
+            // 在动画过程中实时更新 OrbitControls
+            controls.update();
+        },
+    });
+
+    // 使用 gsap 平滑移动 OrbitControls 的目标点
+    gsap.to(controls.target, {
+        x: 2.12,
+        y: -8.26,
+        z: -7.36,
         duration: 1, // 动画持续时间（秒）
         ease: 'power2.out',
         onUpdate: () => {
@@ -57,9 +84,13 @@ const focusOnTop = () => {
 
 const debugCamera = () => {
     console.log("当前相机位置:", camera.position);  // 输出三维坐标(x,y,z)
-    console.log("当前朝向向量:", camera.getWorldDirection());  // 归一化方向向量
+    // console.log("当前朝向向量:", camera.getWorldDirection());  // 归一化方向向量
     console.log("当前旋转角度(弧度):", camera.rotation);  // 欧拉角(x,y,z)
 };
+
+const eqit = () => {
+    Store.setRoomInfo()
+}
 
 onMounted(() => {
     const scene = new THREE.Scene();
@@ -77,7 +108,6 @@ onMounted(() => {
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // 方向光
     directionalLight.position.set(5, 10, 7.5);
     scene.add(directionalLight);
-
     // 加载模型
     const loader = new GLTFLoader();
     loader.load('/src/assets/room.glb', (gltf) => {
@@ -86,9 +116,6 @@ onMounted(() => {
         console.log('模型:', model);
         model.scale.set(0.1, 0.1, 0.1); // 调整模型大小
         model.position.set(0, 0, 0); // 设置模型位置
-        // 对准模型
-        camera.position.set(2, 6, -11); // 设置相机位置
-        camera.lookAt(0.01, -0.84, 0.53); // 设置相机朝向
         scene.add(model);
         console.log('模型加载完成:', scene);
     },
@@ -114,6 +141,7 @@ onMounted(() => {
     });
     // 禁用交互
     // controls.enabled = false;
+    focusOnTop()
 
     // 动画循环
     const animate = () => {
@@ -136,14 +164,71 @@ onMounted(() => {
     position: absolute;
     top: 0;
     width: 100%;
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
-    z-index: 10;
+    z-index: 11;
+    border-radius: 8px;
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
-    .btn {
+    .btns {
+        display: flex;
+        flex-direction: column;
         position: absolute;
-        right: 20px;
+        left: 20px;
         top: 80px;
+        gap: 10px;
+
+        .btn {
+            background: #ffffff;
+            font-weight: 700;
+            color: #333;
+            border: 1px solid #333;
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+
+            &:hover {
+                background: #f0f0f0;
+                color: #000;
+                box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+                transform: translateY(-2px);
+            }
+
+            &:active {
+                background: #e6e6e6;
+                color: #000;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+                transform: translateY(1px);
+            }
+        }
+
+        .eqit {
+            // 红色按钮
+            background: #ff0000;
+            color: #fff;
+
+            &:hover {
+                background: #ff0000;
+                color: #fff;
+                box-shadow: 0 4px 6px rgba(255, 0, 0, 0.2), 0 1px 3px rgba(255, 0, 0, 0.1);
+                transform: translateY(-2px);
+            }
+
+            &:active {
+                background: #ff0000;
+                color: #fff;
+                box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2), 0 1px 2px rgba(255, 0, 0, 0.1);
+                transform: translateY(1px);
+            }
+        }
     }
 }
 </style>

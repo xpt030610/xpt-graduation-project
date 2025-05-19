@@ -142,6 +142,7 @@ export class DormService {
           else if (isSmokeExceeded) indicator = 'smoke';
 
           return {
+            buildingId: room.buildingId,
             roomId: room.roomId,
             temperature: room.temperature,
             humidity: room.humidity,

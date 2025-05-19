@@ -18,7 +18,10 @@
         <floorPlan v-if="isShowFloorPlan" :floorInfo="dormInfo" :buildingId="selectedObject.name.split('-')[1]"
             @close="isShowFloorPlan = false" />
         <NoticeForm v-if="isShowNoticeForm" :buildingId="hoveredInfo.name || '西一'" @close="isShowNoticeForm = false" />
-        <button class="btn" @click="focusOnTopView">宿舍楼俯视图</button>
+        <div class="btns">
+            <button class="btn" @click="focusOnTopView">宿舍楼俯视图</button>
+            <button class="btn" @click="showError">宿舍楼状态</button>
+        </div>
     </div>
 </template>
 
@@ -95,7 +98,6 @@ const dormInfo = ref({
 let targetObject = null; // 当前选中的对象
 const isShowNoticeForm = ref(false); // 是否显示通知表单
 const isShowFloorPlan = ref(false); // 是否显示楼层平面图
-const buildingOptions = ref([])
 
 // 操作按钮点击事件
 const handleAction = (action) => {
@@ -112,6 +114,7 @@ const handleAction = (action) => {
 };
 
 // 获取宿舍楼数据
+const buildingOptions = ref([])
 const fetchBuildings = async () => {
     const response = await Axios.get('/dorm/getAllBuildings');
     const data = response.data;
@@ -121,6 +124,62 @@ const fetchBuildings = async () => {
         floors: building.floors,
     }));
 };
+
+// 获取问题宿舍数据
+const errorBuildings = ref([])
+const fetchErrorBuildings = async () => {
+    const response = await Axios.get('/dorm/checkRoomIndicators');
+    const data = response.data;
+    console.log('获取问题宿舍:', data, response);
+    errorBuildings.value = [];
+    for (const dorm of data) {
+        const buildingId = dorm.buildingId;
+        const roomId = dorm.roomId;
+        const roomPart = roomId.substring(buildingId.length); // 例如 "424" 从 "西四424"
+        console.log(`解析出的楼栋号: ${roomPart}`);
+        const floor = roomPart[0]; // 提取到的楼层号，例如 "4"
+        console.log(`解析出的楼层号: ${floor}`);
+        if (!errorBuildings.value[buildingId]) {
+            errorBuildings.value[buildingId] = {};
+        }
+        if (!errorBuildings.value[buildingId][floor]) {
+            errorBuildings.value[buildingId][floor] = [];
+        }
+        errorBuildings.value[buildingId][floor].push({
+            ...dorm,
+        });
+    }
+    console.log('errorBuildings.value', errorBuildings.value);
+};
+
+const showError = () => {
+    for (const building in errorBuildings.value) {
+        console.log('building1', building);
+        const model = buildingRefs.value['building-' + building]
+        if (model) {
+            console.log('model', model);
+            model.material = model.material.clone();
+            model.material.emissive = new THREE.Color(0x000000);
+            gsap.to(model.material.emissive, {
+                // 使用暖橙色
+                r: 1, g: 0.5, b: 0, // 调整 RGB 分量为暖橙色
+                duration: 1,
+                repeat: -1, // Repeat indefinitely
+                yoyo: true, // Go back and forth
+                ease: "power1.inOut"
+            });
+            gsap.to(model.material, {
+                emissiveIntensity: 0.8, // 脉冲强度
+                duration: 1,
+                repeat: -1, // Repeat indefinitely
+                yoyo: true, // Go back and forth
+                ease: "power1.inOut"
+            });
+        }
+    }
+    console.log("building", buildingRefs.value, errorBuildings.value)
+
+}
 
 // 选择楼层
 const selectFloor = (floor) => {
@@ -303,6 +362,7 @@ const onClick = () => {
 onMounted(() => {
     // 获取宿舍楼数据
     fetchBuildings();
+    fetchErrorBuildings();
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x101010);
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -463,14 +523,20 @@ onUnmounted(() => {
     box-shadow: none;
 }
 
-.btn {
+.btns {
     position: absolute;
     top: 80px;
     left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn {
     background: #ffffff;
     font-weight: 700;
     color: #333;
-    border: 1px solid #333;
+    border: 0;
     padding: 12px 24px;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);

@@ -6,12 +6,14 @@
             <div class="stair right-stair">楼梯</div>
             <div class="hallway"></div>
             <div class="top">
-                <div class="room" v-for="room in roomList.slice(0, Math.ceil(roomList.length / 2))" :key="room.roomId">
+                <div class="room" v-for="room in roomList.slice(0, Math.ceil(roomList.length / 2))" :key="room.roomId"
+                    @click="openRoom(room)">
                     {{ room.roomId }}
                 </div>
             </div>
             <div class="bottom">
-                <div class="room" v-for="room in roomList.slice(Math.ceil(roomList.length / 2))" :key="room.roomId">
+                <div class="room" v-for="room in roomList.slice(Math.ceil(roomList.length / 2))" :key="room.roomId"
+                    @click="openRoom(room)">
                     {{ room.roomId }}
                 </div>
             </div>
@@ -21,6 +23,8 @@
 <script setup>
 import { defineEmits, defineProps, ref, onMounted } from 'vue';
 import Axios from '../utils/axios';
+import { useStore } from '../stores';
+const Store = useStore();
 
 const emit = defineEmits(['close']);
 const props = defineProps({
@@ -48,6 +52,11 @@ const fetchRooms = async () => {
     console.log('获取宿舍:', data, response);
     roomList.value = data.roomDetails
 };
+
+const openRoom = (room) => {
+    Store.setRoomInfo(room)
+}
+
 onMounted(() => {
     fetchRooms();
 });
@@ -60,7 +69,7 @@ onMounted(() => {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5); // 半透明黑色遮罩
-    z-index: 1000; // 确保遮罩层在最上方
+    z-index: 10; // 确保遮罩层在最上方
     display: flex;
     justify-content: center;
     align-items: center;

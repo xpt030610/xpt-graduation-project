@@ -6,7 +6,7 @@
         <container />
         <add-dorm-form v-if="showAddDormForm" @showForm="handleShowForm" />
         <notice v-if="showNoticeBox" :noticeList="noticeList" @showForm="handleShowForm" />
-        <room />
+        <room v-if="isRoom" />
     </div>
 </template>
 
@@ -24,6 +24,7 @@ import { jwtDecode } from 'jwt-decode';
 import { useStore } from '../stores';
 const Store = useStore();
 const noticeList = computed(() => Store.noticeList);
+const isRoom = computed(() => Store.isRoom);
 
 const getUserInfo = () => {
     Store.setUserInfo({}); // 初始化用户信息
@@ -38,15 +39,6 @@ const getUserInfo = () => {
         Store.setUserInfo(userInfo);
     }
 };
-// const noticeList = ref([]); // 存储通知列表
-// const getNoticeList = async () => {
-//     const userInfo = Store.userInfo;
-//     const response = await Axios.post('/dorm/getMemberNotices', {
-//         userId: userInfo.userId,
-//     });
-//     noticeList.value = response.data;
-//     console.log('获取通知列表:', response.data);
-// };
 
 const showAddDormForm = ref(false); // 控制添加宿舍表单的显示状态
 const handleShowForm = (type, value) => {

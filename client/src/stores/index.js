@@ -5,6 +5,8 @@ export const useStore = defineStore("user", {
     isAdmin: false, // 是否是管理员
     userInfo: {}, // 用户信息
     noticeList: [], // 通知列表
+    isRoom: false,
+    roomInfo: {},
   }),
   actions: {
     setUserInfo(userInfo) {
@@ -19,6 +21,16 @@ export const useStore = defineStore("user", {
       });
       this.noticeList = response.data;
       console.log("获取通知列表:", response.data);
+    },
+    setRoomInfo(room) {
+      if (room) {
+        this.isRoom = true;
+        this.roomInfo = room;
+      } else {
+        this.isRoom = false;
+        this.roomInfo = {};
+      }
+      console.log("pinia roomInfo", this.roomInfo, this.isRoom);
     },
   },
 });
